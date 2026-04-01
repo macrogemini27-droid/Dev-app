@@ -40,6 +40,14 @@ jobs:
     - name: Get Flutter version
       run: flutter --version
 
+    - name: Create debug keystore for CI
+      run: |
+        mkdir -p $HOME/.android
+        keytool -genkey -v -keystore $HOME/.android/debug.keystore \
+          -storepass android -alias androiddebugkey -keypass android \
+          -keyalg RSA -keysize 2048 -validity 10000 \
+          -dname "CN=Android Debug,O=Android,C=US"
+
     - name: Install dependencies
       run: flutter pub get
 

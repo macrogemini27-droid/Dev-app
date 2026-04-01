@@ -8,6 +8,7 @@ import '../../../domain/entities/ssh_config.dart';
 class SSHClientImpl {
   SSHClient? _client;
   SSHSession? _session;
+  SftpClient? _sftpClient;
   String? _currentWorkingDirectory;
   final _connectionStatusController = StreamController<SSHConnectionStatus>.broadcast();
   SSHConnectionStatus _currentStatus = SSHConnectionStatus.disconnected;
@@ -57,8 +58,10 @@ class SSHClientImpl {
 
   Future<void> disconnect() async {
     try {
+      _sftpClient?.close();
       _session?.close();
       _client?.close();
+      _sftpClient = null;
       _session = null;
       _client = null;
       _currentWorkingDirectory = null;
@@ -77,10 +80,11 @@ class SSHClientImpl {
     }
 
     try {
-      // Escape command for shell safety
-      final escapedCommand = _escapeShellCommand(command);
+      // Wrap entire command in single quotes for maximum safety
+      // This prevents ALL shell expansion and injection
+      final safeCommand = _wrapInSingleQuotes(command);
 
-      final result = await _client!.run(escapedCommand);
+      final result = await _client!.run(safeCommand);
 
       // dartssh2 returns Uint8List directly
       return utf8.decode(result);
@@ -93,13 +97,22 @@ class SSHClientImpl {
     }
   }
 
+  /// Get or create a cached SFTP client
+  Future<SftpClient> _getSftpClient() async {
+    if (_sftpClient != null) {
+      return _sftpClient!;
+    }
+    _sftpClient = await _client!.sftp();
+    return _sftpClient!;
+  }
+
   Future<String> readFile(String path) async {
     if (!isConnected) {
       throw SSHException(message: 'Not connected to SSH server');
     }
 
     try {
-      final sftp = await _client!.sftp();
+      final sftp = await _getSftpClient();
       final file = await sftp.open(path);
       final content = await file.readBytes();
       await file.close();
@@ -118,7 +131,7 @@ class SSHClientImpl {
     }
 
     try {
-      final sftp = await _client!.sftp();
+      final sftp = await _getSftpClient();
       final file = await sftp.open(
         path,
         mode: SftpFileOpenMode.create | SftpFileOpenMode.write | SftpFileOpenMode.truncate,
@@ -139,7 +152,7 @@ class SSHClientImpl {
     }
 
     try {
-      final sftp = await _client!.sftp();
+      final sftp = await _getSftpClient();
       final items = await sftp.listdir(path);
       return items.map((item) => item.filename).where((name) => name != '.' && name != '..').toList();
     } catch (e) {
@@ -155,9 +168,26 @@ class SSHClientImpl {
     _connectionStatusController.add(status);
   }
 
+  /// Wrap command in single quotes to prevent ALL shell expansion
+  /// This is the safest way to pass commands to shell
+  String _wrapInSingleQuotes(String command) {
+    // Remove null bytes first
+    final cleaned = command.replaceAll('\x00', '');
+    
+    // Escape single quotes by closing quote, adding escaped quote, reopening quote
+    // Example: "it's" becomes 'it'\''s'
+    final escaped = cleaned.replaceAll("'", r"'\''");
+    
+    return "'$escaped'";
+  }
+
+  /// Legacy method - kept for backward compatibility but not recommended
+  /// Use _wrapInSingleQuotes instead for better security
+  @Deprecated('Use _wrapInSingleQuotes for better security')
   String _escapeShellCommand(String command) {
-    // Enhanced shell escaping - prevent command injection
-    // Handle special characters, newlines, and null bytes
+    // This method has known vulnerabilities with:
+    // - Single quotes, semicolons, pipes, redirections, etc.
+    // Use _wrapInSingleQuotes instead
     return command
         .replaceAll('\x00', '') // Remove null bytes
         .replaceAll(r'\', r'\\')
@@ -166,7 +196,17 @@ class SSHClientImpl {
         .replaceAll(r'"', r'\"')
         .replaceAll('\n', r'\n')
         .replaceAll('\r', r'\r')
-        .replaceAll('\t', r'\t');
+        .replaceAll('\t', r'\t')
+        .replaceAll("'", r"\'")
+        .replaceAll(';', r'\;')
+        .replaceAll('|', r'\|')
+        .replaceAll('&', r'\&')
+        .replaceAll('>', r'\>')
+        .replaceAll('<', r'\<')
+        .replaceAll('!', r'\!')
+        .replaceAll('~', r'\~')
+        .replaceAll('*', r'\*')
+        .replaceAll('?', r'\?');
   }
 
   String _escapeShellArgument(String arg) {

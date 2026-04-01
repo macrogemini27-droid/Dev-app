@@ -49,16 +49,30 @@ android {
     }
 
     signingConfigs {
+        debug {
+            // Default debug signing
+        }
         release {
             // For GitHub Actions or CI/CD
             if (System.getenv("CI")) {
-                // Use debug signing in CI for now
-                // TODO: Set up proper release signing with secrets
-                storeFile file("${System.getProperty('user.home')}/.android/debug.keystore")
-                storePassword "android"
-                keyAlias "androiddebugkey"
-                keyPassword "android"
+                def keystorePath = "${System.getProperty('user.home')}/.android/debug.keystore"
+                def keystoreFile = file(keystorePath)
+                
+                if (keystoreFile.exists()) {
+                    storeFile keystoreFile
+                    storePassword "android"
+                    keyAlias "androiddebugkey"
+                    keyPassword "android"
+                } else {
+                    // Fallback to debug signing if keystore not found
+                    storeFile null
+                }
             }
+            // For local builds, you can configure release signing here
+            // storeFile file('path/to/your/keystore.jks')
+            // storePassword System.getenv("KEYSTORE_PASSWORD")
+            // keyAlias System.getenv("KEY_ALIAS")
+            // keyPassword System.getenv("KEY_PASSWORD")
         }
     }
 
@@ -69,8 +83,12 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             
-            // Use release signing if available, otherwise debug
-            signingConfig signingConfigs.release ?: signingConfigs.debug
+            // Use release signing if configured, otherwise debug
+            if (signingConfigs.release.storeFile != null) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
         }
         debug {
             signingConfig signingConfigs.debug
