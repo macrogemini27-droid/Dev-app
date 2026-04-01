@@ -1,0 +1,33 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Dart files
+*.dart text
+
+# Flutter/Dart generated files
+*.g.dart linguist-generated=true
+*.freezed.dart linguist-generated=true
+
+# Documentation
+*.md text
+
+# Configuration files
+*.yaml text
+*.yml text
+*.json text
+
+# Scripts
+*.sh text eol=lf
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text
+
+# Archives
+*.zip binary
+*.tar binary
+*.gz binary
