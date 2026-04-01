@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'core/di/injection_container.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/screens/home/home_screen.dart';
+import 'presentation/blocs/connection/connection_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,11 +21,18 @@ class ClaudeCodeMobileApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Claude Code Mobile',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      home: const HomeScreen(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ConnectionBloc>(
+          create: (context) => sl<ConnectionBloc>(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Claude Code Mobile',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.darkTheme,
+        home: const HomeScreen(),
+      ),
     );
   }
 }

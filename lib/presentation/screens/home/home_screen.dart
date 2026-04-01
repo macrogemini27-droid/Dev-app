@@ -10,37 +10,72 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Claude Code Mobile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildConnectionStatus(context),
-          Expanded(
-            child: _buildSessionList(context),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          _showNewSessionDialog(context);
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('New Session'),
+    return BlocListener<connection.ConnectionBloc, connection.ConnectionState>(
+      listener: (context, state) {
+        if (state is connection.ConnectionConnected) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Connected to ${state.config.name}'),
+              backgroundColor: AppTheme.successColor,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else if (state is connection.ConnectionError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Connection failed: ${state.message}'),
+              backgroundColor: AppTheme.errorColor,
+              duration: const Duration(seconds: 4),
+              action: SnackBarAction(
+                label: 'Retry',
+                textColor: Colors.white,
+                onPressed: () {
+                  _showConnectionDialog(context);
+                },
+              ),
+            ),
+          );
+        } else if (state is connection.ConnectionDisconnected) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Disconnected from server'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Claude Code Mobile'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            _buildConnectionStatus(context),
+            Expanded(
+              child: _buildSessionList(context),
+            ),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            _showNewSessionDialog(context);
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('New Session'),
+        ),
       ),
     );
   }
