@@ -1,5 +1,6 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
-import '../../../core/constants/app_constants.dart';
+import 'package:claude_code_mobile/core/constants/app_constants.dart';
 
 class AnthropicApiClient {
   late final Dio _dio;
@@ -97,7 +98,7 @@ class AnthropicApiClient {
 
   dynamic _parseJson(String jsonStr) {
     try {
-      return const JsonDecoder().convert(jsonStr);
+      return jsonDecode(jsonStr);
     } catch (e) {
       return {};
     }

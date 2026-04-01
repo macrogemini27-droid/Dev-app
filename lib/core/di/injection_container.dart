@@ -1,7 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:sqflite/sqflite.dart';
 
 import '../../data/datasources/local/database_helper.dart';
 import '../../data/datasources/local/local_storage_service.dart';

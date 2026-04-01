@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import '../../core/errors/failures.dart';
-import '../repositories/session_repository.dart';
-import '../entities/message.dart';
+import 'package:claude_code_mobile/core/errors/failures.dart';
+import 'package:claude_code_mobile/domain/repositories/session_repository.dart';
+import 'package:claude_code_mobile/domain/entities/message.dart';
 
 class SaveMessage {
   final SessionRepository repository;

@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import '../../core/errors/failures.dart';
-import '../repositories/session_repository.dart';
-import '../entities/session.dart';
+import 'package:claude_code_mobile/core/errors/failures.dart';
+import 'package:claude_code_mobile/domain/repositories/session_repository.dart';
+import 'package:claude_code_mobile/domain/entities/session.dart';
 
 class CreateSession {
   final SessionRepository repository;

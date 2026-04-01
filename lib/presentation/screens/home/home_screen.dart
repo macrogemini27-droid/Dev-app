@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../blocs/connection/connection_bloc.dart';
-import '../../blocs/provider/provider_bloc.dart';
-import '../chat/chat_screen.dart';
+import 'package:claude_code_mobile/core/theme/app_theme.dart';
+import 'package:claude_code_mobile/presentation/blocs/connection/connection_bloc.dart' hide ConnectionState;
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});

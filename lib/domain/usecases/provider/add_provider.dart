@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import '../../core/errors/failures.dart';
-import '../repositories/provider_repository.dart';
-import '../entities/provider_config.dart';
+import 'package:claude_code_mobile/core/errors/failures.dart';
+import 'package:claude_code_mobile/domain/repositories/provider_repository.dart';
+import 'package:claude_code_mobile/domain/entities/provider_config.dart';
 
 class AddProvider {
   final ProviderRepository repository;

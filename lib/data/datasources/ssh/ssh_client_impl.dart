@@ -82,16 +82,8 @@ class SSHClientImpl {
 
       final result = await _client!.run(escapedCommand);
 
-      if (result.exitCode != 0) {
-        final stderr = utf8.decode(result.stderr);
-        throw SSHException(
-          message: 'Command failed with exit code ${result.exitCode}',
-          code: result.exitCode.toString(),
-          details: stderr,
-        );
-      }
-
-      return utf8.decode(result.stdout);
+      // dartssh2 returns Uint8List directly
+      return utf8.decode(result);
     } catch (e) {
       if (e is SSHException) rethrow;
       throw SSHException(

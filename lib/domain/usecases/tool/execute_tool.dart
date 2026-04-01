@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
-import '../../core/errors/failures.dart';
-import '../repositories/tool_repository.dart';
-import '../entities/tool.dart';
-import '../entities/message.dart';
+import 'package:claude_code_mobile/core/errors/failures.dart';
+import 'package:claude_code_mobile/domain/repositories/tool_repository.dart';
+import 'package:claude_code_mobile/domain/entities/tool.dart';
+import 'package:claude_code_mobile/domain/entities/message.dart';
 
 class ExecuteTool {
   final ToolRepository repository;

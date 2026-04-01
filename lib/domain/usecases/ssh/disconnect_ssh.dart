@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import '../../core/errors/failures.dart';
-import '../repositories/ssh_repository.dart';
+import 'package:claude_code_mobile/core/errors/failures.dart';
+import 'package:claude_code_mobile/domain/repositories/ssh_repository.dart';
 
 class DisconnectSSH {
   final SSHRepository repository;
