@@ -1,5 +1,4 @@
 import '../../domain/entities/tool.dart';
-import '../../domain/entities/message.dart';
 import '../../domain/repositories/ssh_repository.dart';
 import '../repositories/tool_repository_impl.dart';
 
@@ -10,17 +9,17 @@ class FileReadTool extends BaseTool {
 
   @override
   Tool get definition => const Tool(
-        name: 'Read',
-        description: 'Read a file from the remote server',
-        inputSchema: {
+        name: 'read_file',
+        description: 'Read the contents of a file from the remote server',
+        parameters: {
           'type': 'object',
           'properties': {
-            'file_path': {
+            'path': {
               'type': 'string',
-              'description': 'The absolute path to the file to read',
+              'description': 'The path to the file to read',
             },
           },
-          'required': ['file_path'],
+          'required': ['path'],
         },
         isReadOnly: true,
         isConcurrencySafe: true,
@@ -30,27 +29,14 @@ class FileReadTool extends BaseTool {
   bool get isReadOnly => true;
 
   @override
-  Future<ToolResult> execute(
-    Map<String, dynamic> input,
-    ToolExecutionContext context,
-  ) async {
-    final filePath = input['file_path'] as String;
+  Future<String> execute(Map<String, dynamic> arguments) async {
+    final filePath = arguments['path'] as String;
 
     final result = await sshRepository.readFile(filePath);
 
     return result.fold(
-      (failure) => ToolResult(
-        toolCallId: '',
-        content: 'Error reading file: ${failure.message}',
-        isError: true,
-        timestamp: DateTime.now(),
-      ),
-      (content) => ToolResult(
-        toolCallId: '',
-        content: content,
-        isError: false,
-        timestamp: DateTime.now(),
-      ),
+      (failure) => 'Error reading file: ${failure.message}',
+      (content) => content,
     );
   }
 }

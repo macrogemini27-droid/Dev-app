@@ -111,6 +111,7 @@ Future<void> initializeDependencies() async {
       executeTool: sl(),
       saveMessage: sl(),
       loadSession: sl(),
+      getProviders: sl(),
     ),
   );
   sl.registerFactory(

@@ -1,5 +1,4 @@
 import '../../domain/entities/tool.dart';
-import '../../domain/entities/message.dart';
 import '../../domain/repositories/ssh_repository.dart';
 import '../repositories/tool_repository_impl.dart';
 
@@ -10,14 +9,14 @@ class BashTool extends BaseTool {
 
   @override
   Tool get definition => const Tool(
-        name: 'Bash',
-        description: 'Execute a bash command on the remote server',
-        inputSchema: {
+        name: 'execute_command',
+        description: 'Execute a shell command on the remote server',
+        parameters: {
           'type': 'object',
           'properties': {
             'command': {
               'type': 'string',
-              'description': 'The bash command to execute',
+              'description': 'The shell command to execute',
             },
           },
           'required': ['command'],
@@ -30,27 +29,14 @@ class BashTool extends BaseTool {
   bool get isReadOnly => false;
 
   @override
-  Future<ToolResult> execute(
-    Map<String, dynamic> input,
-    ToolExecutionContext context,
-  ) async {
-    final command = input['command'] as String;
+  Future<String> execute(Map<String, dynamic> arguments) async {
+    final command = arguments['command'] as String;
 
     final result = await sshRepository.executeCommand(command);
 
     return result.fold(
-      (failure) => ToolResult(
-        toolCallId: '',
-        content: 'Command failed: ${failure.message}',
-        isError: true,
-        timestamp: DateTime.now(),
-      ),
-      (output) => ToolResult(
-        toolCallId: '',
-        content: output,
-        isError: false,
-        timestamp: DateTime.now(),
-      ),
+      (failure) => 'Error: ${failure.message}',
+      (output) => output,
     );
   }
 }

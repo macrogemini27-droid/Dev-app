@@ -1,18 +1,11 @@
 import 'package:dartz/dartz.dart';
 import '../entities/tool.dart';
-import '../entities/message.dart';
 import '../../core/errors/failures.dart';
 
 abstract class ToolRepository {
-  Future<Either<Failure, ToolResult>> executeTool({
+  Future<Either<Failure, String>> executeTool({
     required String toolName,
-    required Map<String, dynamic> input,
-    required ToolExecutionContext context,
-  });
-
-  Future<Either<Failure, List<ToolResult>>> executeBatch({
-    required List<ToolCall> toolCalls,
-    required ToolExecutionContext context,
+    required Map<String, dynamic> arguments,
   });
 
   List<Tool> getAvailableTools();

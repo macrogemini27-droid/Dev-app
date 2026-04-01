@@ -4,7 +4,9 @@ import 'package:claude_code_mobile/core/theme/app_theme.dart';
 import 'package:claude_code_mobile/presentation/blocs/connection/connection_bloc.dart' as connection;
 import 'package:claude_code_mobile/presentation/screens/settings/settings_screen.dart';
 import 'package:claude_code_mobile/presentation/screens/settings/widgets/ssh_config_form.dart';
+import 'package:claude_code_mobile/presentation/screens/chat/modern_chat_screen.dart';
 import 'package:claude_code_mobile/domain/entities/ssh_config.dart';
+import 'package:uuid/uuid.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -437,12 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () {
-                // TODO: Navigate to chat screen
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Chat screen coming soon!'),
-                  ),
-                );
+                _navigateToChat(context, config);
               },
               icon: const Icon(Icons.add),
               label: const Text('New Session'),
@@ -462,12 +459,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (state is connection.ConnectionConnected) {
           return FloatingActionButton.extended(
             onPressed: () {
-              // TODO: Navigate to chat screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Chat screen coming soon!'),
-                ),
-              );
+              _navigateToChat(context, state.config);
             },
             icon: const Icon(Icons.add),
             label: const Text('New Session'),
@@ -479,6 +471,19 @@ class _HomeScreenState extends State<HomeScreen> {
           child: const Icon(Icons.add),
         );
       },
+    );
+  }
+
+  void _navigateToChat(BuildContext context, SSHConfig config) {
+    // Generate a new session ID
+    const uuid = Uuid();
+    final sessionId = uuid.v4();
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ModernChatScreen(sessionId: sessionId),
+      ),
     );
   }
 

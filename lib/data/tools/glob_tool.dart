@@ -1,5 +1,4 @@
 import '../../domain/entities/tool.dart';
-import '../../domain/entities/message.dart';
 import '../../domain/repositories/ssh_repository.dart';
 import '../repositories/tool_repository_impl.dart';
 
@@ -10,21 +9,21 @@ class GlobTool extends BaseTool {
 
   @override
   Tool get definition => const Tool(
-        name: 'Glob',
-        description: 'Find files matching a pattern',
-        inputSchema: {
+        name: 'list_files',
+        description: 'List files in a directory or find files matching a pattern',
+        parameters: {
           'type': 'object',
           'properties': {
-            'pattern': {
-              'type': 'string',
-              'description': 'The glob pattern to match (e.g., "*.dart")',
-            },
             'path': {
               'type': 'string',
-              'description': 'The path to search in (default: current directory)',
+              'description': 'The directory path to list',
+            },
+            'pattern': {
+              'type': 'string',
+              'description': 'Optional glob pattern to match (e.g., "*.dart")',
             },
           },
-          'required': ['pattern'],
+          'required': ['path'],
         },
         isReadOnly: true,
         isConcurrencySafe: true,
@@ -34,29 +33,19 @@ class GlobTool extends BaseTool {
   bool get isReadOnly => true;
 
   @override
-  Future<ToolResult> execute(
-    Map<String, dynamic> input,
-    ToolExecutionContext context,
-  ) async {
-    final pattern = input['pattern'] as String;
-    final path = input['path'] as String? ?? '.';
+  Future<String> execute(Map<String, dynamic> arguments) async {
+    final path = arguments['path'] as String;
+    final pattern = arguments['pattern'] as String?;
 
-    final command = 'find $path -name "$pattern"';
+    final command = pattern != null
+        ? 'find $path -name "$pattern"'
+        : 'ls -la $path';
+    
     final result = await sshRepository.executeCommand(command);
 
     return result.fold(
-      (failure) => ToolResult(
-        toolCallId: '',
-        content: 'Find failed: ${failure.message}',
-        isError: true,
-        timestamp: DateTime.now(),
-      ),
-      (output) => ToolResult(
-        toolCallId: '',
-        content: output.isEmpty ? 'No files found' : output,
-        isError: false,
-        timestamp: DateTime.now(),
-      ),
+      (failure) => 'List failed: ${failure.message}',
+      (output) => output.isEmpty ? 'No files found' : output,
     );
   }
 }

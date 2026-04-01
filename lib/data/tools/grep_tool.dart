@@ -1,5 +1,4 @@
 import '../../domain/entities/tool.dart';
-import '../../domain/entities/message.dart';
 import '../../domain/repositories/ssh_repository.dart';
 import '../repositories/tool_repository_impl.dart';
 
@@ -10,9 +9,9 @@ class GrepTool extends BaseTool {
 
   @override
   Tool get definition => const Tool(
-        name: 'Grep',
-        description: 'Search for a pattern in files',
-        inputSchema: {
+        name: 'search_files',
+        description: 'Search for a pattern in files using grep',
+        parameters: {
           'type': 'object',
           'properties': {
             'pattern': {
@@ -34,29 +33,16 @@ class GrepTool extends BaseTool {
   bool get isReadOnly => true;
 
   @override
-  Future<ToolResult> execute(
-    Map<String, dynamic> input,
-    ToolExecutionContext context,
-  ) async {
-    final pattern = input['pattern'] as String;
-    final path = input['path'] as String? ?? '.';
+  Future<String> execute(Map<String, dynamic> arguments) async {
+    final pattern = arguments['pattern'] as String;
+    final path = arguments['path'] as String? ?? '.';
 
     final command = 'grep -r "$pattern" $path';
     final result = await sshRepository.executeCommand(command);
 
     return result.fold(
-      (failure) => ToolResult(
-        toolCallId: '',
-        content: 'Search failed: ${failure.message}',
-        isError: true,
-        timestamp: DateTime.now(),
-      ),
-      (output) => ToolResult(
-        toolCallId: '',
-        content: output.isEmpty ? 'No matches found' : output,
-        isError: false,
-        timestamp: DateTime.now(),
-      ),
+      (failure) => 'Search failed: ${failure.message}',
+      (output) => output.isEmpty ? 'No matches found' : output,
     );
   }
 }

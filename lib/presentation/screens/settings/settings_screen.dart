@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:claude_code_mobile/core/theme/app_theme.dart';
 import 'package:claude_code_mobile/presentation/blocs/connection/connection_bloc.dart' as connection;
 import 'package:claude_code_mobile/presentation/screens/settings/widgets/ssh_config_form.dart';
+import 'package:claude_code_mobile/presentation/screens/settings/provider_management_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -15,6 +16,26 @@ class SettingsScreen extends StatelessWidget {
       ),
       body: ListView(
         children: [
+          _buildSection(
+            context,
+            title: 'AI Providers',
+            children: [
+              ListTile(
+                leading: const Icon(Icons.psychology),
+                title: const Text('Manage Providers'),
+                subtitle: const Text('Configure Anthropic, Gemini, Groq, and custom providers'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProviderManagementScreen(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
           _buildSection(
             context,
             title: 'SSH Connections',

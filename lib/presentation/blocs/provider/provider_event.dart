@@ -28,3 +28,21 @@ class SelectProviderEvent extends ProviderEvent {
   @override
   List<Object?> get props => [provider];
 }
+
+class SetDefaultProviderEvent extends ProviderEvent {
+  final String providerId;
+
+  const SetDefaultProviderEvent({required this.providerId});
+
+  @override
+  List<Object?> get props => [providerId];
+}
+
+class DeleteProviderEvent extends ProviderEvent {
+  final String providerId;
+
+  const DeleteProviderEvent({required this.providerId});
+
+  @override
+  List<Object?> get props => [providerId];
+}

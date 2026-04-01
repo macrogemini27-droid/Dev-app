@@ -13,7 +13,7 @@ class ProviderLoading extends ProviderState {}
 
 class ProviderLoaded extends ProviderState {
   final List<ProviderConfig> providers;
-  final ProviderConfig selectedProvider;
+  final ProviderConfig? selectedProvider;
 
   const ProviderLoaded({
     required this.providers,

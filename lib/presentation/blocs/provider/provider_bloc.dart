@@ -18,6 +18,8 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
     on<LoadProvidersEvent>(_onLoadProviders);
     on<AddProviderEvent>(_onAddProvider);
     on<SelectProviderEvent>(_onSelectProvider);
+    on<SetDefaultProviderEvent>(_onSetDefaultProvider);
+    on<DeleteProviderEvent>(_onDeleteProvider);
   }
 
   Future<void> _onLoadProviders(
@@ -32,7 +34,7 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
       (failure) => emit(ProviderError(message: failure.toString())),
       (providers) {
         if (providers.isEmpty) {
-          emit(const ProviderError(message: 'No providers available'));
+          emit(ProviderLoaded(providers: [], selectedProvider: null));
           return;
         }
 
@@ -53,21 +55,13 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
     AddProviderEvent event,
     Emitter<ProviderState> emit,
   ) async {
-    if (state is! ProviderLoaded) return;
-
-    final currentState = state as ProviderLoaded;
-    emit(ProviderLoading());
-
     final result = await addProvider(event.provider);
 
     result.fold(
       (failure) => emit(ProviderError(message: failure.toString())),
       (_) {
-        final updatedProviders = [...currentState.providers, event.provider];
-        emit(ProviderLoaded(
-          providers: updatedProviders,
-          selectedProvider: currentState.selectedProvider,
-        ));
+        // Reload providers
+        add(LoadProvidersEvent());
       },
     );
   }
@@ -80,5 +74,38 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
 
     final currentState = state as ProviderLoaded;
     emit(currentState.copyWith(selectedProvider: event.provider));
+  }
+
+  Future<void> _onSetDefaultProvider(
+    SetDefaultProviderEvent event,
+    Emitter<ProviderState> emit,
+  ) async {
+    if (state is! ProviderLoaded) return;
+
+    final currentState = state as ProviderLoaded;
+    
+    // Update all providers to set the selected one as default
+    final updatedProviders = currentState.providers.map((p) {
+      return p.copyWith(isDefault: p.id == event.providerId);
+    }).toList();
+
+    // Save each provider (in a real implementation, you'd have an update method)
+    for (final provider in updatedProviders) {
+      await addProvider(provider);
+    }
+
+    // Reload providers
+    add(LoadProvidersEvent());
+  }
+
+  Future<void> _onDeleteProvider(
+    DeleteProviderEvent event,
+    Emitter<ProviderState> emit,
+  ) async {
+    if (state is! ProviderLoaded) return;
+
+    // In a real implementation, you'd have a delete method in the repository
+    // For now, just reload
+    add(LoadProvidersEvent());
   }
 }

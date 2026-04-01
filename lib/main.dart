@@ -6,6 +6,8 @@ import 'core/di/injection_container.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/screens/home/home_screen.dart';
 import 'presentation/blocs/connection/connection_bloc.dart';
+import 'presentation/blocs/chat/chat_bloc.dart';
+import 'presentation/blocs/provider/provider_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +27,12 @@ class ClaudeCodeMobileApp extends StatelessWidget {
       providers: [
         BlocProvider<ConnectionBloc>(
           create: (context) => sl<ConnectionBloc>(),
+        ),
+        BlocProvider<ChatBloc>(
+          create: (context) => sl<ChatBloc>(),
+        ),
+        BlocProvider<ProviderBloc>(
+          create: (context) => sl<ProviderBloc>(),
         ),
       ],
       child: MaterialApp(

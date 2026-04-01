@@ -1,5 +1,4 @@
 import '../../domain/entities/tool.dart';
-import '../../domain/entities/message.dart';
 import '../../domain/repositories/ssh_repository.dart';
 import '../repositories/tool_repository_impl.dart';
 
@@ -10,14 +9,14 @@ class FileEditTool extends BaseTool {
 
   @override
   Tool get definition => const Tool(
-        name: 'Edit',
+        name: 'edit_file',
         description: 'Edit a file by replacing old string with new string',
-        inputSchema: {
+        parameters: {
           'type': 'object',
           'properties': {
-            'file_path': {
+            'path': {
               'type': 'string',
-              'description': 'The absolute path to the file to edit',
+              'description': 'The path to the file to edit',
             },
             'old_string': {
               'type': 'string',
@@ -28,7 +27,7 @@ class FileEditTool extends BaseTool {
               'description': 'The replacement string',
             },
           },
-          'required': ['file_path', 'old_string', 'new_string'],
+          'required': ['path', 'old_string', 'new_string'],
         },
         isReadOnly: false,
         isConcurrencySafe: false,
@@ -38,24 +37,16 @@ class FileEditTool extends BaseTool {
   bool get isReadOnly => false;
 
   @override
-  Future<ToolResult> execute(
-    Map<String, dynamic> input,
-    ToolExecutionContext context,
-  ) async {
-    final filePath = input['file_path'] as String;
-    final oldString = input['old_string'] as String;
-    final newString = input['new_string'] as String;
+  Future<String> execute(Map<String, dynamic> arguments) async {
+    final filePath = arguments['path'] as String;
+    final oldString = arguments['old_string'] as String;
+    final newString = arguments['new_string'] as String;
 
     // Read file first
     final readResult = await sshRepository.readFile(filePath);
 
     return await readResult.fold(
-      (failure) async => ToolResult(
-        toolCallId: '',
-        content: 'Error reading file: ${failure.message}',
-        isError: true,
-        timestamp: DateTime.now(),
-      ),
+      (failure) async => 'Error reading file: ${failure.message}',
       (content) async {
         // Replace content
         final newContent = content.replaceAll(oldString, newString);
@@ -64,18 +55,8 @@ class FileEditTool extends BaseTool {
         final writeResult = await sshRepository.writeFile(filePath, newContent);
 
         return writeResult.fold(
-          (failure) => ToolResult(
-            toolCallId: '',
-            content: 'Error writing file: ${failure.message}',
-            isError: true,
-            timestamp: DateTime.now(),
-          ),
-          (_) => ToolResult(
-            toolCallId: '',
-            content: 'File edited successfully: $filePath',
-            isError: false,
-            timestamp: DateTime.now(),
-          ),
+          (failure) => 'Error writing file: ${failure.message}',
+          (_) => 'Successfully edited $filePath',
         );
       },
     );

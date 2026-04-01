@@ -1,15 +1,14 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:claude_code_mobile/core/constants/app_constants.dart';
 import '../../../domain/entities/provider_config.dart';
 import '../../../domain/entities/message.dart';
 import '../../../domain/entities/tool.dart';
 import 'base_api_client.dart';
 
-class AnthropicApiClient extends BaseApiClient {
+class GroqApiClient extends BaseApiClient {
   late final Dio _dio;
 
-  AnthropicApiClient({
+  GroqApiClient({
     required super.config,
   }) {
     _dio = Dio(
@@ -19,8 +18,7 @@ class AnthropicApiClient extends BaseApiClient {
         receiveTimeout: const Duration(seconds: 120),
         headers: {
           'Content-Type': 'application/json',
-          'anthropic-version': '2023-06-01',
-          'x-api-key': config.apiKey,
+          'Authorization': 'Bearer ${config.apiKey}',
         },
       ),
     );
@@ -36,17 +34,16 @@ class AnthropicApiClient extends BaseApiClient {
   }) async* {
     try {
       final response = await _dio.post(
-        '/messages',
+        '/chat/completions',
         options: Options(
           responseType: ResponseType.stream,
         ),
         data: {
           'model': getModelName(),
-          'messages': _convertMessages(messages),
-          if (systemPrompt != null) 'system': systemPrompt,
+          'messages': _convertMessages(messages, systemPrompt),
           if (tools.isNotEmpty) 'tools': _convertTools(tools),
-          'max_tokens': maxTokens ?? 4096,
-          'temperature': temperature ?? 1.0,
+          if (maxTokens != null) 'max_tokens': maxTokens,
+          if (temperature != null) 'temperature': temperature,
           'stream': true,
         },
       );
@@ -74,61 +71,79 @@ class AnthropicApiClient extends BaseApiClient {
         }
       }
     } on DioException catch (e) {
-      yield StreamErrorEvent('API streaming failed: ${e.message}', e);
+      yield StreamErrorEvent('Groq API streaming failed: ${e.message}', e);
     } catch (e) {
       yield StreamErrorEvent('Stream error: $e', e);
     }
   }
 
   Stream<ApiStreamEvent> _handleStreamEvent(Map<String, dynamic> event) async* {
-    final type = event['type'] as String?;
+    final choices = event['choices'] as List?;
+    if (choices == null || choices.isEmpty) return;
 
-    switch (type) {
-      case 'content_block_delta':
-        final delta = event['delta'];
-        if (delta['type'] == 'text_delta') {
-          yield TextChunkEvent(delta['text'] as String);
-        }
-        break;
+    final choice = choices.first as Map<String, dynamic>;
+    final delta = choice['delta'] as Map<String, dynamic>?;
+    if (delta == null) return;
 
-      case 'message_delta':
-        final delta = event['delta'];
-        if (delta['stop_reason'] != null) {
-          yield StreamEndEvent(
-            stopReason: delta['stop_reason'] as String?,
-            usage: event['usage'] as Map<String, dynamic>?,
+    // Handle text content
+    if (delta.containsKey('content') && delta['content'] != null) {
+      yield TextChunkEvent(delta['content'] as String);
+    }
+
+    // Handle tool calls
+    if (delta.containsKey('tool_calls')) {
+      final toolCalls = delta['tool_calls'] as List;
+      for (final toolCall in toolCalls) {
+        final toolCallMap = toolCall as Map<String, dynamic>;
+        final function = toolCallMap['function'] as Map<String, dynamic>?;
+        
+        if (function != null && function['name'] != null) {
+          yield ToolCallEvent(
+            toolCallId: toolCallMap['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            toolName: function['name'] as String,
+            arguments: jsonDecode(function['arguments'] as String? ?? '{}'),
           );
         }
-        break;
+      }
+    }
 
-      case 'message_stop':
-        yield StreamEndEvent();
-        break;
-
-      case 'error':
-        yield StreamErrorEvent(
-          event['error']?['message'] ?? 'Unknown error',
-          event['error'],
-        );
-        break;
+    // Check for finish reason
+    final finishReason = choice['finish_reason'] as String?;
+    if (finishReason != null) {
+      yield StreamEndEvent(stopReason: finishReason);
     }
   }
 
-  List<Map<String, dynamic>> _convertMessages(List<Message> messages) {
-    return messages.map((msg) {
-      return {
+  List<Map<String, dynamic>> _convertMessages(List<Message> messages, String? systemPrompt) {
+    final converted = <Map<String, dynamic>>[];
+    
+    // Add system prompt if provided
+    if (systemPrompt != null && systemPrompt.isNotEmpty) {
+      converted.add({
+        'role': 'system',
+        'content': systemPrompt,
+      });
+    }
+
+    for (final msg in messages) {
+      converted.add({
         'role': msg.role == MessageRole.user ? 'user' : 'assistant',
         'content': msg.content,
-      };
-    }).toList();
+      });
+    }
+
+    return converted;
   }
 
   List<Map<String, dynamic>> _convertTools(List<Tool> tools) {
     return tools.map((tool) {
       return {
-        'name': tool.name,
-        'description': tool.description,
-        'input_schema': tool.parameters,
+        'type': 'function',
+        'function': {
+          'name': tool.name,
+          'description': tool.description,
+          'parameters': tool.parameters,
+        },
       };
     }).toList();
   }
