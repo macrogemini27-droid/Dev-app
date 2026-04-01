@@ -4,7 +4,8 @@
       "Bash(find src:*)",
       "Bash(ls:*)",
       "Bash(wc:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
