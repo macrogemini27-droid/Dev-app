@@ -4,6 +4,7 @@ import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/message.dart' as domain;
+import '../../../domain/entities/tool.dart';
 import '../../blocs/chat/chat_bloc.dart';
 import '../../blocs/connection/connection_bloc.dart' as connection;
 
