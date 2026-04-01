@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:claude_code_mobile/core/theme/app_theme.dart';
-import 'package:claude_code_mobile/presentation/blocs/connection/connection_bloc.dart' hide ConnectionState;
+import 'package:claude_code_mobile/presentation/blocs/connection/connection_bloc.dart' as connection;
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -39,21 +39,21 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildConnectionStatus(BuildContext context) {
-    return BlocBuilder<ConnectionBloc, ConnectionState>(
+    return BlocBuilder<connection.ConnectionBloc, connection.ConnectionState>(
       builder: (context, state) {
         Color statusColor;
         String statusText;
         IconData statusIcon;
 
-        if (state is ConnectionConnected) {
+        if (state is connection.ConnectionConnected) {
           statusColor = AppTheme.successColor;
           statusText = 'Connected to ${state.config.name}';
           statusIcon = Icons.check_circle;
-        } else if (state is ConnectionConnecting) {
+        } else if (state is connection.ConnectionConnecting) {
           statusColor = AppTheme.warningColor;
           statusText = 'Connecting...';
           statusIcon = Icons.sync;
-        } else if (state is ConnectionError) {
+        } else if (state is connection.ConnectionError) {
           statusColor = AppTheme.errorColor;
           statusText = 'Connection failed';
           statusIcon = Icons.error;
@@ -88,16 +88,16 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              if (state is ConnectionConnected)
+              if (state is connection.ConnectionConnected)
                 TextButton(
                   onPressed: () {
-                    context.read<ConnectionBloc>().add(
-                          const DisconnectFromServerEvent(),
+                    context.read<connection.ConnectionBloc>().add(
+                          const connection.DisconnectFromServerEvent(),
                         );
                   },
                   child: const Text('Disconnect'),
                 ),
-              if (state is ConnectionDisconnected || state is ConnectionError)
+              if (state is connection.ConnectionDisconnected || state is connection.ConnectionError)
                 TextButton(
                   onPressed: () {
                     _showConnectionDialog(context);
