@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/message.dart' as domain;
 import '../../blocs/chat/chat_bloc.dart' as chat;
 import '../../blocs/connection/connection_bloc.dart' as connection;
+import '../../widgets/error_display.dart';
 
 class ModernChatScreen extends StatefulWidget {
   final String sessionId;
@@ -156,40 +157,14 @@ class _ModernChatScreenState extends State<ModernChatScreen> {
           }
 
           if (state is chat.ChatError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: AppTheme.errorColor,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading chat',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    state.message,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                  context.read<chat.ChatBloc>().add(
-                        chat.LoadSessionEvent(sessionId: widget.sessionId),
-                      );
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
-                  ),
-                ],
-              ),
+            return ErrorDisplay(
+              title: 'Error Loading Chat',
+              message: state.message,
+              onRetry: () {
+                context.read<chat.ChatBloc>().add(
+                      chat.LoadSessionEvent(sessionId: widget.sessionId),
+                    );
+              },
             );
           }
 

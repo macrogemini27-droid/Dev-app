@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/provider_config.dart';
 import '../../blocs/provider/provider_bloc.dart';
+import '../../widgets/error_display.dart';
 
 class ProviderManagementScreen extends StatefulWidget {
   const ProviderManagementScreen({super.key});
@@ -31,22 +32,12 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen> {
           }
 
           if (state is ProviderError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
-                  const SizedBox(height: 16),
-                  Text(state.message),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<ProviderBloc>().add(LoadProvidersEvent());
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
+            return ErrorDisplay(
+              title: 'Error Loading Providers',
+              message: state.message,
+              onRetry: () {
+                context.read<ProviderBloc>().add(LoadProvidersEvent());
+              },
             );
           }
 
@@ -278,7 +269,7 @@ class ProviderConfigForm extends StatefulWidget {
   State<ProviderConfigForm> createState() => _ProviderConfigFormState();
 }
 
-class _ProviderConfigFormState extends State<ProviderConfigForm> {
+class _ProviderConfigFormState extends State<ProviderConfigForm> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _apiKeyController = TextEditingController();
@@ -287,9 +278,32 @@ class _ProviderConfigFormState extends State<ProviderConfigForm> {
   
   ProviderType _selectedType = ProviderType.anthropic;
   bool _isDefault = false;
+  bool _obscureApiKey = true;
+  bool _showAdvanced = false;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+    _animationController.forward();
+    
+    // Set default values
+    _baseUrlController.text = _selectedType.defaultBaseUrl;
+    _modelNameController.text = _selectedType.defaultModel;
+  }
 
   @override
   void dispose() {
+    _animationController.dispose();
     _nameController.dispose();
     _apiKeyController.dispose();
     _baseUrlController.dispose();
@@ -300,9 +314,11 @@ class _ProviderConfigFormState extends State<ProviderConfigForm> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Add Provider'),
+        title: const Text('Add AI Provider'),
         automaticallyImplyLeading: false,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.close),
@@ -310,103 +326,332 @@ class _ProviderConfigFormState extends State<ProviderConfigForm> {
           ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            DropdownButtonFormField<ProviderType>(
-              value: _selectedType,
-              decoration: const InputDecoration(
-                labelText: 'Provider Type',
-                border: OutlineInputBorder(),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              // Provider Type Selection with Cards
+              Text(
+                'Select Provider',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimaryColor,
+                    ),
               ),
-              items: ProviderType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(type.displayName),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedType = value!;
-                  _baseUrlController.text = value.defaultBaseUrl;
-                  _modelNameController.text = value.defaultModel;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'My Anthropic API',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: ProviderType.values.map((type) {
+                  final isSelected = _selectedType == type;
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        _selectedType = type;
+                        _baseUrlController.text = type.defaultBaseUrl;
+                        _modelNameController.text = type.defaultModel;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppTheme.primaryColor.withOpacity(0.15)
+                            : AppTheme.surfaceColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppTheme.primaryColor
+                              : AppTheme.borderColor,
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getProviderIcon(type),
+                            color: isSelected
+                                ? AppTheme.primaryColor
+                                : AppTheme.textSecondaryColor,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            type.displayName,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? AppTheme.primaryColor
+                                  : AppTheme.textSecondaryColor,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a name';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _apiKeyController,
-              decoration: const InputDecoration(
-                labelText: 'API Key',
-                hintText: 'sk-ant-...',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 32),
+              
+              // Basic Configuration
+              Text(
+                'Basic Configuration',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimaryColor,
+                    ),
               ),
-              obscureText: true,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter an API key';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _baseUrlController,
-              decoration: InputDecoration(
-                labelText: 'Base URL (Optional)',
-                hintText: _selectedType.defaultBaseUrl,
-                border: const OutlineInputBorder(),
+              const SizedBox(height: 16),
+              
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: 'Provider Name',
+                  hintText: 'My ${_selectedType.displayName}',
+                  prefixIcon: const Icon(Icons.label_outline),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: AppTheme.surfaceColor,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a name';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _modelNameController,
-              decoration: InputDecoration(
-                labelText: 'Model Name (Optional)',
-                hintText: _selectedType.defaultModel,
-                border: const OutlineInputBorder(),
-                helperText: 'Leave empty to use default model',
+              const SizedBox(height: 16),
+              
+              TextFormField(
+                controller: _apiKeyController,
+                decoration: InputDecoration(
+                  labelText: 'API Key',
+                  hintText: 'Enter your API key',
+                  prefixIcon: const Icon(Icons.key),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureApiKey ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureApiKey = !_obscureApiKey;
+                      });
+                    },
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: AppTheme.surfaceColor,
+                ),
+                obscureText: _obscureApiKey,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter an API key';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Set as default provider'),
-              value: _isDefault,
-              onChanged: (value) {
-                setState(() {
-                  _isDefault = value;
-                });
-              },
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _saveProvider,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+              const SizedBox(height: 24),
+              
+              // Advanced Settings
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _showAdvanced = !_showAdvanced;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.tune,
+                        color: AppTheme.primaryColor,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Advanced Settings',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimaryColor,
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(
+                        _showAdvanced ? Icons.expand_less : Icons.expand_more,
+                        color: AppTheme.textSecondaryColor,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              child: const Text('Add Provider'),
-            ),
-          ],
+              
+              AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                child: _showAdvanced
+                    ? Column(
+                        children: [
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _baseUrlController,
+                            decoration: InputDecoration(
+                              labelText: 'Base URL',
+                              hintText: _selectedType.defaultBaseUrl,
+                              prefixIcon: const Icon(Icons.link),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: AppTheme.surfaceColor,
+                              helperText: 'Leave empty to use default',
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _modelNameController,
+                            decoration: InputDecoration(
+                              labelText: 'Model Name',
+                              hintText: _selectedType.defaultModel,
+                              prefixIcon: const Icon(Icons.memory),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: AppTheme.surfaceColor,
+                              helperText: 'Leave empty to use default model',
+                            ),
+                          ),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Default Provider Switch
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _isDefault
+                      ? AppTheme.primaryColor.withOpacity(0.1)
+                      : AppTheme.surfaceColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _isDefault
+                        ? AppTheme.primaryColor.withOpacity(0.3)
+                        : AppTheme.borderColor,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.star,
+                      color: _isDefault
+                          ? AppTheme.primaryColor
+                          : AppTheme.textTertiaryColor,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Set as Default Provider',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Use this provider for new chats',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: _isDefault,
+                      onChanged: (value) {
+                        setState(() {
+                          _isDefault = value;
+                        });
+                      },
+                      activeColor: AppTheme.primaryColor,
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 32),
+              
+              // Save Button
+              ElevatedButton(
+                onPressed: _saveProvider,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.check_circle_outline),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Add Provider',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  IconData _getProviderIcon(ProviderType type) {
+    switch (type) {
+      case ProviderType.anthropic:
+        return Icons.psychology;
+      case ProviderType.gemini:
+        return Icons.auto_awesome;
+      case ProviderType.groq:
+        return Icons.flash_on;
+      case ProviderType.bedrock:
+        return Icons.cloud;
+      case ProviderType.vertex:
+        return Icons.cloud_circle;
+      case ProviderType.custom:
+        return Icons.settings_input_component;
+    }
   }
 
   void _saveProvider() {
@@ -424,6 +669,20 @@ class _ProviderConfigFormState extends State<ProviderConfigForm> {
 
       context.read<ProviderBloc>().add(AddProviderEvent(provider: provider));
       Navigator.pop(context);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Text('${provider.name} added successfully'),
+            ],
+          ),
+          backgroundColor: AppTheme.successColor,
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 }

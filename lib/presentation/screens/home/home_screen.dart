@@ -436,17 +436,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: AppTheme.textTertiaryColor,
                   ),
             ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () {
-                _navigateToChat(context, config);
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('New Session'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              ),
-            ),
           ],
         ),
       ),
