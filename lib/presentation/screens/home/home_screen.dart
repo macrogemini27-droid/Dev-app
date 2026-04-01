@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:claude_code_mobile/core/theme/app_theme.dart';
 import 'package:claude_code_mobile/presentation/blocs/connection/connection_bloc.dart' as connection;
+import 'package:claude_code_mobile/presentation/screens/settings/settings_screen.dart';
+import 'package:claude_code_mobile/presentation/screens/settings/widgets/ssh_config_form.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -15,7 +17,12 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              // TODO: Navigate to settings
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
             },
           ),
         ],
@@ -167,18 +174,13 @@ class HomeScreen extends StatelessWidget {
   }
 
   void _showConnectionDialog(BuildContext context) {
-    // TODO: Implement connection dialog
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Connect to Server'),
-        content: const Text('Connection dialog coming soon...'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+      builder: (context) => Dialog(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: const SSHConfigForm(),
+        ),
       ),
     );
   }
