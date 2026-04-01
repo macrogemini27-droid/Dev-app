@@ -5,10 +5,15 @@
 -keep class io.flutter.view.**  { *; }
 -keep class io.flutter.**  { *; }
 -keep class io.flutter.plugins.**  { *; }
+-keep class io.flutter.embedding.** { *; }
 
 # Dart
 -keep class com.google.firebase.** { *; }
 -dontwarn com.google.firebase.**
+
+# Google Play Core (for Flutter deferred components)
+-keep class com.google.android.play.core.** { *; }
+-dontwarn com.google.android.play.core.**
 
 # SSH Client (dartssh2)
 -keep class com.dartssh2.** { *; }

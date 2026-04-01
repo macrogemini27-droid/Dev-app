@@ -78,10 +78,11 @@ android {
 
     buildTypes {
         release {
-            // Shrink and obfuscate code
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Disable minify for now to avoid ProGuard issues
+            // TODO: Enable after proper testing with all dependencies
+            minifyEnabled false
+            shrinkResources false
+            // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             
             // Use release signing if configured, otherwise debug
             if (signingConfigs.release.storeFile != null) {
