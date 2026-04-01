@@ -17,16 +17,7 @@ class Tool with _$Tool {
   factory Tool.fromJson(Map<String, dynamic> json) => _$ToolFromJson(json);
 }
 
-@freezed
-class ToolCall with _$ToolCall {
-  const factory ToolCall({
-    required String id,
-    required String name,
-    required Map<String, dynamic> arguments,
-  }) = _ToolCall;
 
-  factory ToolCall.fromJson(Map<String, dynamic> json) => _$ToolCallFromJson(json);
-}
 
 @freezed
 class ToolExecutionParams with _$ToolExecutionParams {

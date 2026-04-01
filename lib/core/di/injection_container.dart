@@ -51,7 +51,6 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => SecureStorageService(sl()));
   sl.registerLazySingleton(() => DatabaseHelper.instance);
   sl.registerLazySingleton(() => SSHClientImpl());
-  sl.registerLazySingleton(() => AnthropicApiClient());
 
   // Repositories
   sl.registerLazySingleton<SSHRepository>(

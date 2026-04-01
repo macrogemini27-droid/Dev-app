@@ -248,157 +248,9 @@ abstract class _Tool implements Tool {
       throw _privateConstructorUsedError;
 }
 
-ToolCall _$ToolCallFromJson(Map<String, dynamic> json) {
-  return _ToolCall.fromJson(json);
-}
-
-/// @nodoc
-mixin _$ToolCall {
-  String get id => throw _privateConstructorUsedError;
-  String get name => throw _privateConstructorUsedError;
-  Map<String, dynamic> get arguments => throw _privateConstructorUsedError;
-
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $ToolCallCopyWith<ToolCall> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $ToolCallCopyWith<$Res> {
-  factory $ToolCallCopyWith(ToolCall value, $Res Function(ToolCall) then) =
-      _$ToolCallCopyWithImpl<$Res, ToolCall>;
-  @useResult
-  $Res call({String id, String name, Map<String, dynamic> arguments});
-}
-
-/// @nodoc
-class _$ToolCallCopyWithImpl<$Res, $Val extends ToolCall>
-    implements $ToolCallCopyWith<$Res> {
-  _$ToolCallCopyWithImpl(this._value, this._then);
-
-  final $Val _value;
-  final $Res Function($Val) _then;
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? name = null,
-    Object? arguments = null,
-  }) {
-    return _then(_value.copyWith(
-      id: null == id ? _value.id : id,
-      name: null == name ? _value.name : name,
-      arguments: null == arguments ? _value.arguments : arguments,
-    ) as $Val);
-  }
-}
-
-/// @nodoc
-abstract class _$$ToolCallImplCopyWith<$Res>
-    implements $ToolCallCopyWith<$Res> {
-  factory _$$ToolCallImplCopyWith(
-          _$ToolCallImpl value, $Res Function(_$ToolCallImpl) then) =
-      __$$ToolCallImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({String id, String name, Map<String, dynamic> arguments});
-}
-
-/// @nodoc
-class __$$ToolCallImplCopyWithImpl<$Res>
-    extends _$ToolCallCopyWithImpl<$Res, _$ToolCallImpl>
-    implements _$$ToolCallImplCopyWith<$Res> {
-  __$$ToolCallImplCopyWithImpl(
-      _$ToolCallImpl _value, $Res Function(_$ToolCallImpl) _then)
-      : super(_value, _then);
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? name = null,
-    Object? arguments = null,
-  }) {
-    return _then(_$ToolCallImpl(
-      id: null == id ? _value.id : id,
-      name: null == name ? _value.name : name,
-      arguments: null == arguments ? _value.arguments : arguments,
-    ));
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$ToolCallImpl implements _ToolCall {
-  const _$ToolCallImpl(
-      {required this.id, required this.name, required this.arguments});
-
-  factory _$ToolCallImpl.fromJson(Map<String, dynamic> json) =>
-      _$$ToolCallImplFromJson(json);
-
-  @override
-  final String id;
-  @override
-  final String name;
-  @override
-  final Map<String, dynamic> arguments;
-
-  @override
-  String toString() {
-    return 'ToolCall(id: $id, name: $name, arguments: $arguments)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$ToolCallImpl &&
-            (identical(other.id, id) || other.id == id) &&
-            (identical(other.name, name) || other.name == name) &&
-            const DeepCollectionEquality().equals(other.arguments, arguments));
-  }
-
-  @JsonKey(ignore: true)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType, id, name, const DeepCollectionEquality().hash(arguments));
-
-  @JsonKey(ignore: true)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$ToolCallImplCopyWith<_$ToolCallImpl> get copyWith =>
-      __$$ToolCallImplCopyWithImpl<_$ToolCallImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$ToolCallImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _ToolCall implements ToolCall {
-  const factory _ToolCall(
-      {required final String id,
-      required final String name,
-      required final Map<String, dynamic> arguments}) = _$ToolCallImpl;
-
-  factory _ToolCall.fromJson(Map<String, dynamic> json) =
-      _$ToolCallImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  String get name;
-  @override
-  Map<String, dynamic> get arguments;
-  @override
-  @JsonKey(ignore: true)
-  _$$ToolCallImplCopyWith<_$ToolCallImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+// **************************************************************************
+// ToolExecutionParams
+// **************************************************************************
 
 ToolExecutionParams _$ToolExecutionParamsFromJson(Map<String, dynamic> json) {
   return _ToolExecutionParams.fromJson(json);
@@ -545,6 +397,10 @@ abstract class _ToolExecutionParams implements ToolExecutionParams {
   _$$ToolExecutionParamsImplCopyWith<_$ToolExecutionParamsImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
+
+// **************************************************************************
+// ToolExecutionContext
+// **************************************************************************
 
 ToolExecutionContext _$ToolExecutionContextFromJson(
     Map<String, dynamic> json) {

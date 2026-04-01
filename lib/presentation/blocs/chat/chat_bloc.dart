@@ -4,7 +4,6 @@ import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 import '../../../domain/entities/message.dart';
 import '../../../domain/entities/session.dart';
-import '../../../domain/entities/tool.dart';
 import '../../../domain/entities/provider_config.dart';
 import '../../../domain/usecases/tool/execute_tool.dart';
 import '../../../domain/usecases/session/save_message.dart';
@@ -61,10 +60,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     providersResult.fold(
       (failure) => null,
       (providers) {
-        defaultProvider = providers.firstWhere(
-          (p) => p.isDefault,
-          orElse: () => providers.isNotEmpty ? providers.first : null as ProviderConfig,
-        );
+        if (providers.isNotEmpty) {
+          defaultProvider = providers.firstWhere(
+            (p) => p.isDefault,
+            orElse: () => providers.first,
+          );
+        }
       },
     );
 
@@ -137,7 +138,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             toolCall: ToolCall(
               id: event.toolCallId,
               name: event.toolName,
-              arguments: event.arguments,
+              input: event.arguments,
             ),
           ));
 
@@ -148,7 +149,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             toolCall: ToolCall(
               id: event.toolCallId,
               name: event.toolName,
-              arguments: event.arguments,
+              input: event.arguments,
+            ),
+            result: ToolResult(
+              toolCallId: event.toolCallId,
+              content: toolResult,
             ),
           ));
 

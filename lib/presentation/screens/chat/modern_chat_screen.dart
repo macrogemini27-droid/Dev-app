@@ -4,8 +4,8 @@ import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/message.dart' as domain;
-import '../../../domain/entities/tool.dart';
 import '../../blocs/chat/chat_bloc.dart';
+import '../../blocs/chat/chat_state.dart' as chat_state;
 import '../../blocs/connection/connection_bloc.dart' as connection;
 
 class ModernChatScreen extends StatefulWidget {
@@ -36,7 +36,7 @@ class _ModernChatScreenState extends State<ModernChatScreen> {
       appBar: AppBar(
         title: BlocBuilder<ChatBloc, ChatState>(
           builder: (context, state) {
-            if (state is ChatLoaded) {
+            if (state is chat_state.ChatLoaded) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -194,7 +194,7 @@ class _ModernChatScreenState extends State<ModernChatScreen> {
             );
           }
 
-          if (state is ChatLoaded) {
+          if (state is chat_state.ChatLoaded) {
             return Column(
               children: [
                 // Tool execution indicators
@@ -237,8 +237,7 @@ class _ModernChatScreenState extends State<ModernChatScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        ...state.executingTools.map((tool) {
-                          final toolCall = tool as ToolCall;
+                        ...state.executingTools.map((toolCall) {
                           return Padding(
                             padding: const EdgeInsets.only(left: 28, top: 4),
                             child: Text(
