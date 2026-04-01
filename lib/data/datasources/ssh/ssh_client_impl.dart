@@ -94,20 +94,60 @@ class SSHClientImpl {
   }
 
   Future<String> readFile(String path) async {
-    final escapedPath = _escapeShellArgument(path);
-    return await executeCommand('cat $escapedPath');
+    if (!isConnected) {
+      throw SSHException(message: 'Not connected to SSH server');
+    }
+
+    try {
+      final sftp = await _client!.sftp();
+      final file = await sftp.open(path);
+      final content = await file.readBytes();
+      await file.close();
+      return utf8.decode(content);
+    } catch (e) {
+      throw SSHException(
+        message: 'Failed to read file: ${e.toString()}',
+        details: e,
+      );
+    }
   }
 
   Future<void> writeFile(String path, String content) async {
-    final escapedPath = _escapeShellArgument(path);
-    final escapedContent = _escapeShellArgument(content);
-    await executeCommand('echo $escapedContent > $escapedPath');
+    if (!isConnected) {
+      throw SSHException(message: 'Not connected to SSH server');
+    }
+
+    try {
+      final sftp = await _client!.sftp();
+      final file = await sftp.open(
+        path,
+        mode: SftpFileOpenMode.create | SftpFileOpenMode.write | SftpFileOpenMode.truncate,
+      );
+      await file.writeBytes(utf8.encode(content));
+      await file.close();
+    } catch (e) {
+      throw SSHException(
+        message: 'Failed to write file: ${e.toString()}',
+        details: e,
+      );
+    }
   }
 
   Future<List<String>> listDirectory(String path) async {
-    final escapedPath = _escapeShellArgument(path);
-    final result = await executeCommand('ls -1 $escapedPath');
-    return result.split('\n').where((line) => line.isNotEmpty).toList();
+    if (!isConnected) {
+      throw SSHException(message: 'Not connected to SSH server');
+    }
+
+    try {
+      final sftp = await _client!.sftp();
+      final items = await sftp.listdir(path);
+      return items.map((item) => item.filename).where((name) => name != '.' && name != '..').toList();
+    } catch (e) {
+      throw SSHException(
+        message: 'Failed to list directory: ${e.toString()}',
+        details: e,
+      );
+    }
   }
 
   void _updateStatus(SSHConnectionStatus status) {
@@ -116,17 +156,24 @@ class SSHClientImpl {
   }
 
   String _escapeShellCommand(String command) {
-    // Basic shell escaping - prevent command injection
+    // Enhanced shell escaping - prevent command injection
+    // Handle special characters, newlines, and null bytes
     return command
+        .replaceAll('\x00', '') // Remove null bytes
         .replaceAll(r'\', r'\\')
         .replaceAll(r'$', r'\$')
         .replaceAll(r'`', r'\`')
-        .replaceAll(r'"', r'\"');
+        .replaceAll(r'"', r'\"')
+        .replaceAll('\n', r'\n')
+        .replaceAll('\r', r'\r')
+        .replaceAll('\t', r'\t');
   }
 
   String _escapeShellArgument(String arg) {
-    // Wrap in single quotes and escape single quotes
-    return "'${arg.replaceAll("'", r"'\''")}'";
+    // Remove null bytes and wrap in single quotes
+    // Single quotes prevent all shell expansion
+    final cleaned = arg.replaceAll('\x00', '');
+    return "'${cleaned.replaceAll("'", r"'\''")}'";
   }
 
   Future<String> _readPrivateKey(String path) async {
@@ -134,8 +181,8 @@ class SSHClientImpl {
     throw UnimplementedError('Private key reading not implemented');
   }
 
-  void dispose() {
-    _connectionStatusController.close();
-    disconnect();
+  Future<void> dispose() async {
+    await _connectionStatusController.close();
+    await disconnect();
   }
 }

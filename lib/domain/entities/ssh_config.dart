@@ -15,7 +15,7 @@ class SSHConfig with _$SSHConfig {
     String? password,
     String? privateKeyPath,
     String? passphrase,
-    @Default(false) bool verifyHostKey,
+    @Default(true) bool verifyHostKey,
     String? workingDirectory,
     DateTime? lastConnected,
   }) = _SSHConfig;

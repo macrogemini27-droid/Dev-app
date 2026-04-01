@@ -48,8 +48,31 @@ android {
         versionName flutterVersionName
     }
 
+    signingConfigs {
+        release {
+            // For GitHub Actions or CI/CD
+            if (System.getenv("CI")) {
+                // Use debug signing in CI for now
+                // TODO: Set up proper release signing with secrets
+                storeFile file("${System.getProperty('user.home')}/.android/debug.keystore")
+                storePassword "android"
+                keyAlias "androiddebugkey"
+                keyPassword "android"
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // Shrink and obfuscate code
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            
+            // Use release signing if available, otherwise debug
+            signingConfig signingConfigs.release ?: signingConfigs.debug
+        }
+        debug {
             signingConfig signingConfigs.debug
         }
     }

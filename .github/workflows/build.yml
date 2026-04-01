@@ -14,9 +14,15 @@ env:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -29,6 +35,10 @@ jobs:
       with:
         flutter-version: '3.19.0'
         channel: 'stable'
+        cache: true
+
+    - name: Get Flutter version
+      run: flutter --version
 
     - name: Install dependencies
       run: flutter pub get
@@ -37,41 +47,87 @@ jobs:
       run: flutter pub run build_runner build --delete-conflicting-outputs
 
     - name: Analyze code
-      run: flutter analyze --no-fatal-infos || true
+      run: flutter analyze --no-fatal-infos
+      continue-on-error: true
 
     - name: Run tests
-      run: flutter test || echo "Tests skipped or failed"
+      run: flutter test
+      continue-on-error: true
+
+    - name: Extract version from pubspec.yaml
+      id: version
+      run: |
+        VERSION=$(grep '^version:' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
 
     - name: Build APK
-      run: flutter build apk --release
+      run: flutter build apk --release --build-name=${{ steps.version.outputs.version }}
 
     - name: Build App Bundle
-      run: flutter build appbundle --release
+      run: flutter build appbundle --release --build-name=${{ steps.version.outputs.version }}
 
-    - name: Rename APK
+    - name: Rename and prepare artifacts
       run: |
-        cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/claude-code-mobile.apk
+        mkdir -p artifacts
+        cp build/app/outputs/flutter-apk/app-release.apk artifacts/claude-code-mobile-${{ steps.version.outputs.version }}.apk
+        cp build/app/outputs/bundle/release/app-release.aab artifacts/claude-code-mobile-${{ steps.version.outputs.version }}.aab
+        
+        # Create checksums
+        cd artifacts
+        sha256sum *.apk > checksums.txt
+        sha256sum *.aab >> checksums.txt
+        cd ..
 
-    - name: Upload APK
+    - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: android-apk
-        path: build/app/outputs/flutter-apk/claude-code-mobile.apk
+        name: android-apk-${{ steps.version.outputs.version }}
+        path: artifacts/*.apk
+        retention-days: 30
 
-    - name: Upload App Bundle
+    - name: Upload App Bundle artifact
       uses: actions/upload-artifact@v4
       with:
-        name: android-aab
-        path: build/app/outputs/bundle/release/app-release.aab
+        name: android-aab-${{ steps.version.outputs.version }}
+        path: artifacts/*.aab
+        retention-days: 30
+
+    - name: Upload checksums
+      uses: actions/upload-artifact@v4
+      with:
+        name: checksums-${{ steps.version.outputs.version }}
+        path: artifacts/checksums.txt
+        retention-days: 30
 
     - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/v')
+      if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          build/app/outputs/flutter-apk/claude-code-mobile.apk
-          build/app/outputs/bundle/release/app-release.aab
+          artifacts/claude-code-mobile-${{ steps.version.outputs.version }}.apk
+          artifacts/claude-code-mobile-${{ steps.version.outputs.version }}.aab
+          artifacts/checksums.txt
+        body: |
+          ## Claude Code Mobile v${{ steps.version.outputs.version }}
+          
+          ### Downloads
+          - **APK**: `claude-code-mobile-${{ steps.version.outputs.version }}.apk` - For direct installation
+          - **AAB**: `claude-code-mobile-${{ steps.version.outputs.version }}.aab` - For Google Play Store
+          
+          ### Installation
+          1. Download the APK file
+          2. Enable "Install from Unknown Sources" on your Android device
+          3. Install the APK
+          
+          ### Checksums
+          See `checksums.txt` for SHA256 checksums of all files.
+          
+          ---
+          Built with Flutter 3.19.0
         generate_release_notes: true
+        draft: false
+        prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
