@@ -66,20 +66,24 @@ jobs:
       id: version
       run: |
         VERSION=$(grep '^version:' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
+        BUILD_NUMBER=${{ github.run_number }}
+        FULL_VERSION="${VERSION}-build.${BUILD_NUMBER}"
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "Version: $VERSION"
+        echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
+        echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+        echo "Version: $FULL_VERSION"
 
     - name: Build APK
-      run: flutter build apk --release --build-name=${{ steps.version.outputs.version }}
+      run: flutter build apk --release --build-name=${{ steps.version.outputs.version }} --build-number=${{ steps.version.outputs.build_number }}
 
     - name: Build App Bundle
-      run: flutter build appbundle --release --build-name=${{ steps.version.outputs.version }}
+      run: flutter build appbundle --release --build-name=${{ steps.version.outputs.version }} --build-number=${{ steps.version.outputs.build_number }}
 
     - name: Rename and prepare artifacts
       run: |
         mkdir -p artifacts
-        cp build/app/outputs/flutter-apk/app-release.apk artifacts/claude-code-mobile-${{ steps.version.outputs.version }}.apk
-        cp build/app/outputs/bundle/release/app-release.aab artifacts/claude-code-mobile-${{ steps.version.outputs.version }}.aab
+        cp build/app/outputs/flutter-apk/app-release.apk artifacts/claude-code-mobile-${{ steps.version.outputs.full_version }}.apk
+        cp build/app/outputs/bundle/release/app-release.aab artifacts/claude-code-mobile-${{ steps.version.outputs.full_version }}.aab
         
         # Create checksums
         cd artifacts
@@ -90,38 +94,42 @@ jobs:
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: android-apk-${{ steps.version.outputs.version }}
+        name: android-apk-${{ steps.version.outputs.full_version }}
         path: artifacts/*.apk
         retention-days: 30
 
     - name: Upload App Bundle artifact
       uses: actions/upload-artifact@v4
       with:
-        name: android-aab-${{ steps.version.outputs.version }}
+        name: android-aab-${{ steps.version.outputs.full_version }}
         path: artifacts/*.aab
         retention-days: 30
 
     - name: Upload checksums
       uses: actions/upload-artifact@v4
       with:
-        name: checksums-${{ steps.version.outputs.version }}
+        name: checksums-${{ steps.version.outputs.full_version }}
         path: artifacts/checksums.txt
         retention-days: 30
 
-    - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
+    - name: Create Auto Release
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       uses: softprops/action-gh-release@v2
       with:
+        tag_name: v${{ steps.version.outputs.full_version }}
+        name: Release v${{ steps.version.outputs.full_version }}
         files: |
-          artifacts/claude-code-mobile-${{ steps.version.outputs.version }}.apk
-          artifacts/claude-code-mobile-${{ steps.version.outputs.version }}.aab
+          artifacts/claude-code-mobile-${{ steps.version.outputs.full_version }}.apk
+          artifacts/claude-code-mobile-${{ steps.version.outputs.full_version }}.aab
           artifacts/checksums.txt
         body: |
-          ## Claude Code Mobile v${{ steps.version.outputs.version }}
+          ## Claude Code Mobile v${{ steps.version.outputs.full_version }}
+          
+          **Build #${{ steps.version.outputs.build_number }}** - Auto-generated release
           
           ### Downloads
-          - **APK**: `claude-code-mobile-${{ steps.version.outputs.version }}.apk` - For direct installation
-          - **AAB**: `claude-code-mobile-${{ steps.version.outputs.version }}.aab` - For Google Play Store
+          - **APK**: `claude-code-mobile-${{ steps.version.outputs.full_version }}.apk` - For direct installation
+          - **AAB**: `claude-code-mobile-${{ steps.version.outputs.full_version }}.aab` - For Google Play Store
           
           ### Installation
           1. Download the APK file
@@ -131,8 +139,11 @@ jobs:
           ### Checksums
           See `checksums.txt` for SHA256 checksums of all files.
           
+          ### Changes
+          ${{ github.event.head_commit.message }}
+          
           ---
-          Built with Flutter 3.19.0
+          Built with Flutter 3.19.0 on ${{ github.run_id }}
         generate_release_notes: true
         draft: false
         prerelease: false
