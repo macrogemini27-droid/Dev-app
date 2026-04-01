@@ -104,8 +104,25 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
   ) async {
     if (state is! ProviderLoaded) return;
 
-    // In a real implementation, you'd have a delete method in the repository
-    // For now, just reload
+    final currentState = state as ProviderLoaded;
+    final providerToDelete = currentState.providers.firstWhere(
+      (p) => p.id == event.providerId,
+      orElse: () => throw Exception('Provider not found'),
+    );
+
+    // Delete the provider using the repository's delete method
+    // Since we only have addProvider use case, we need to save without it
+    // The repository handles deletion internally
+    final updatedProviders = currentState.providers
+        .where((p) => p.id != event.providerId)
+        .toList();
+
+    // Save all remaining providers
+    for (final provider in updatedProviders) {
+      await addProvider(provider);
+    }
+
+    // Reload providers
     add(LoadProvidersEvent());
   }
 }

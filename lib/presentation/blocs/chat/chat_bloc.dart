@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../../domain/entities/message.dart';
 import '../../../domain/entities/session.dart';
 import '../../../domain/entities/provider_config.dart';
+import '../../../domain/entities/tool.dart';
 import '../../../domain/usecases/tool/execute_tool.dart';
 import '../../../domain/usecases/session/save_message.dart';
 import '../../../domain/usecases/session/load_session.dart';

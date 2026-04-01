@@ -4,8 +4,7 @@ import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/message.dart' as domain;
-import '../../blocs/chat/chat_bloc.dart';
-import '../../blocs/chat/chat_state.dart' as chat_state;
+import '../../blocs/chat/chat_bloc.dart' as chat;
 import '../../blocs/connection/connection_bloc.dart' as connection;
 
 class ModernChatScreen extends StatefulWidget {
@@ -27,16 +26,16 @@ class _ModernChatScreenState extends State<ModernChatScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<ChatBloc>().add(LoadSessionEvent(sessionId: widget.sessionId));
+    context.read<chat.ChatBloc>().add(chat.LoadSessionEvent(sessionId: widget.sessionId));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: BlocBuilder<ChatBloc, ChatState>(
+        title: BlocBuilder<chat.ChatBloc, chat.ChatState>(
           builder: (context, state) {
-            if (state is chat_state.ChatLoaded) {
+            if (state is chat.ChatLoaded) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -65,9 +64,9 @@ class _ModernChatScreenState extends State<ModernChatScreen> {
           },
         ),
         actions: [
-          BlocBuilder<ChatBloc, ChatState>(
+          BlocBuilder<chat.ChatBloc, chat.ChatState>(
             builder: (context, state) {
-              if (state is ChatLoaded && state.isStreaming) {
+              if (state is chat.ChatLoaded && state.isStreaming) {
                 return Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: SizedBox(
@@ -133,9 +132,9 @@ class _ModernChatScreenState extends State<ModernChatScreen> {
           ),
         ],
       ),
-      body: BlocConsumer<ChatBloc, ChatState>(
+      body: BlocConsumer<chat.ChatBloc, chat.ChatState>(
         listener: (context, state) {
-          if (state is ChatError) {
+          if (state is chat.ChatError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -150,13 +149,13 @@ class _ModernChatScreenState extends State<ModernChatScreen> {
           }
         },
         builder: (context, state) {
-          if (state is ChatLoading) {
+          if (state is chat.ChatLoading) {
             return const Center(
               child: CircularProgressIndicator(),
             );
           }
 
-          if (state is ChatError) {
+          if (state is chat.ChatError) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -182,9 +181,9 @@ class _ModernChatScreenState extends State<ModernChatScreen> {
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: () {
-                      context.read<ChatBloc>().add(
-                            LoadSessionEvent(sessionId: widget.sessionId),
-                          );
+                  context.read<chat.ChatBloc>().add(
+                        chat.LoadSessionEvent(sessionId: widget.sessionId),
+                      );
                     },
                     icon: const Icon(Icons.refresh),
                     label: const Text('Retry'),
@@ -194,7 +193,7 @@ class _ModernChatScreenState extends State<ModernChatScreen> {
             );
           }
 
-          if (state is chat_state.ChatLoaded) {
+          if (state is chat.ChatLoaded) {
             return Column(
               children: [
                 // Tool execution indicators
@@ -258,8 +257,8 @@ class _ModernChatScreenState extends State<ModernChatScreen> {
                   child: Chat(
                     messages: _convertMessages(state.messages),
                     onSendPressed: (message) {
-                      context.read<ChatBloc>().add(
-                            SendMessageEvent(content: message.text),
+                      context.read<chat.ChatBloc>().add(
+                            chat.SendMessageEvent(content: message.text),
                           );
                     },
                     user: _user,
@@ -373,7 +372,7 @@ class _ModernChatScreenState extends State<ModernChatScreen> {
     return ActionChip(
       label: Text(text),
       onPressed: () {
-        context.read<ChatBloc>().add(SendMessageEvent(content: text));
+        context.read<chat.ChatBloc>().add(chat.SendMessageEvent(content: text));
       },
       backgroundColor: AppTheme.surfaceColor,
       labelStyle: TextStyle(
