@@ -30,7 +30,7 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionState> {
 
     result.fold(
       (failure) => emit(ConnectionError(
-        message: failure.message,
+        message: failure.toString(),
         config: event.config,
       )),
       (_) => emit(ConnectionConnected(config: event.config)),
@@ -46,7 +46,7 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionState> {
     final result = await disconnectSSH();
 
     result.fold(
-      (failure) => emit(ConnectionError(message: failure.message)),
+      (failure) => emit(ConnectionError(message: failure.toString())),
       (_) => emit(ConnectionDisconnected()),
     );
   }

@@ -29,11 +29,16 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
     final result = await getProviders();
 
     result.fold(
-      (failure) => emit(ProviderError(message: failure.message)),
+      (failure) => emit(ProviderError(message: failure.toString())),
       (providers) {
+        if (providers.isEmpty) {
+          emit(const ProviderError(message: 'No providers available'));
+          return;
+        }
+
         final selectedProvider = providers.firstWhere(
           (p) => p.isDefault,
-          orElse: () => providers.isNotEmpty ? providers.first : throw Exception('No providers'),
+          orElse: () => providers.first,
         );
 
         emit(ProviderLoaded(
@@ -56,7 +61,7 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
     final result = await addProvider(event.provider);
 
     result.fold(
-      (failure) => emit(ProviderError(message: failure.message)),
+      (failure) => emit(ProviderError(message: failure.toString())),
       (_) {
         final updatedProviders = [...currentState.providers, event.provider];
         emit(ProviderLoaded(

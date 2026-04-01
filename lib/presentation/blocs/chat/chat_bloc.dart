@@ -88,7 +88,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     final result = await loadSession(event.sessionId);
 
     result.fold(
-      (failure) => emit(ChatError(message: failure.message)),
+      (failure) => emit(ChatError(message: failure.toString())),
       (session) => emit(ChatLoaded(
         session: session,
         messages: session.messages,
