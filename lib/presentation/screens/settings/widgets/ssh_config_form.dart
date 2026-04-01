@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:claude_code_mobile/core/theme/app_theme.dart';
 import 'package:claude_code_mobile/domain/entities/ssh_config.dart';
 import 'package:claude_code_mobile/presentation/blocs/connection/connection_bloc.dart' as connection;
 

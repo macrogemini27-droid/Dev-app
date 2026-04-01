@@ -111,7 +111,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     // Initialize API client
     _apiClient?.dispose();
-    _apiClient = ApiClientFactory.createClient(defaultProvider);
+    _apiClient = ApiClientFactory.createClient(defaultProvider!);
 
     // Get available tools
     final tools = _getAvailableTools();

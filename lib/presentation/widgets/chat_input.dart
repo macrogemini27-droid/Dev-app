@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
+import 'package:claude_code_mobile/core/theme/app_theme.dart';
 
 class ChatInput extends StatefulWidget {
-  final Function(String) onSend;
-  final bool enabled;
-
   const ChatInput({
     super.key,
     required this.onSend,
     this.enabled = true,
   });
+
+  final Function(String) onSend;
+  final bool enabled;
 
   @override
   State<ChatInput> createState() => _ChatInputState();
@@ -51,7 +51,7 @@ class _ChatInputState extends State<ChatInput> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppTheme.surfaceColor,
         border: Border(
           top: BorderSide(
@@ -72,16 +72,16 @@ class _ChatInputState extends State<ChatInput> {
                 textInputAction: TextInputAction.newline,
                 decoration: InputDecoration(
                   hintText: 'Type a message...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
+                  border: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(24)),
                     borderSide: BorderSide(color: AppTheme.borderColor),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
+                  enabledBorder: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(24)),
                     borderSide: BorderSide(color: AppTheme.borderColor),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
+                  focusedBorder: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(24)),
                     borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
                   ),
                   contentPadding: const EdgeInsets.symmetric(

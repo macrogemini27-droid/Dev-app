@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import '../../core/theme/app_theme.dart';
-import '../../domain/entities/message.dart';
+import 'package:claude_code_mobile/core/theme/app_theme.dart';
+import 'package:claude_code_mobile/domain/entities/message.dart';
 
 class MessageBubble extends StatelessWidget {
-  final Message message;
-
   const MessageBubble({
     super.key,
     required this.message,
   });
+
+  final Message message;
 
   @override
   Widget build(BuildContext context) {

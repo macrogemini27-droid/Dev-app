@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
-import '../../domain/entities/message.dart';
+import 'package:claude_code_mobile/core/theme/app_theme.dart';
+import 'package:claude_code_mobile/domain/entities/message.dart';
 
 class ToolExecutionIndicator extends StatelessWidget {
-  final ToolCall toolCall;
-
   const ToolExecutionIndicator({
     super.key,
     required this.toolCall,
   });
+
+  final ToolCall toolCall;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +22,7 @@ class ToolExecutionIndicator extends StatelessWidget {
       ),
       child: Row(
         children: [
-          SizedBox(
+          const SizedBox(
             width: 16,
             height: 16,
             child: CircularProgressIndicator(
