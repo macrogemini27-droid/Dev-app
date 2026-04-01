@@ -236,16 +236,19 @@ class _ModernChatScreenState extends State<ModernChatScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        ...state.executingTools.map((tool) => Padding(
-                              padding: const EdgeInsets.only(left: 28, top: 4),
-                              child: Text(
-                                '• ${tool.name}',
-                                style: TextStyle(
-                                  color: AppTheme.textTertiaryColor,
-                                  fontSize: 12,
-                                ),
+                        ...state.executingTools.map((tool) {
+                          final toolCall = tool as ToolCall;
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 28, top: 4),
+                            child: Text(
+                              '• ${toolCall.name}',
+                              style: TextStyle(
+                                color: AppTheme.textTertiaryColor,
+                                fontSize: 12,
                               ),
-                            )),
+                            ),
+                          );
+                        }),
                       ],
                     ),
                   ),
