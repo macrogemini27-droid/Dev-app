@@ -81,7 +81,7 @@ class SSHConfigRepositoryImpl implements SSHConfigRepository {
         c.copyWith(password: null).toJson()
       ).toList();
 
-      await localStorage.setString(_configsKey, jsonEncode(configsToSave));
+      await localStorage.saveString(_configsKey, jsonEncode(configsToSave));
 
       return const Right(null);
     } on StorageException catch (e) {
@@ -110,7 +110,7 @@ class SSHConfigRepositoryImpl implements SSHConfigRepository {
         c.copyWith(password: null).toJson()
       ).toList();
 
-      await localStorage.setString(_configsKey, jsonEncode(configsToSave));
+      await localStorage.saveString(_configsKey, jsonEncode(configsToSave));
 
       return const Right(null);
     } on StorageException catch (e) {
