@@ -28,6 +28,9 @@ import '../../domain/usecases/session/load_session.dart';
 import '../../domain/usecases/session/save_message.dart';
 import '../../domain/usecases/provider/add_provider.dart';
 import '../../domain/usecases/provider/get_providers.dart';
+import '../../domain/usecases/provider/delete_provider.dart';
+import '../../domain/usecases/provider/update_provider.dart';
+import '../../domain/usecases/provider/set_default_provider.dart';
 import '../../domain/usecases/tool/execute_tool.dart';
 import '../../presentation/blocs/connection/connection_bloc.dart';
 import '../../presentation/blocs/chat/chat_bloc.dart';
@@ -91,6 +94,9 @@ Future<void> initializeDependencies() async {
   // Use Cases - Provider
   sl.registerLazySingleton(() => AddProvider(sl()));
   sl.registerLazySingleton(() => GetProviders(sl()));
+  sl.registerLazySingleton(() => DeleteProvider(sl()));
+  sl.registerLazySingleton(() => UpdateProvider(sl()));
+  sl.registerLazySingleton(() => SetDefaultProvider(sl()));
 
   // Use Cases - Tool
   sl.registerLazySingleton(() => ExecuteTool(sl()));
@@ -117,6 +123,9 @@ Future<void> initializeDependencies() async {
     () => ProviderBloc(
       addProvider: sl(),
       getProviders: sl(),
+      deleteProvider: sl(),
+      updateProvider: sl(),
+      setDefaultProvider: sl(),
     ),
   );
 }

@@ -50,67 +50,116 @@ class _ChatInputState extends State<ChatInput> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
-        border: Border(
+        border: const Border(
           top: BorderSide(
             color: AppTheme.borderColor,
             width: 1,
           ),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
       child: SafeArea(
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
-              child: TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                enabled: widget.enabled,
-                maxLines: null,
-                textInputAction: TextInputAction.newline,
-                decoration: InputDecoration(
-                  hintText: 'Type a message...',
-                  border: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(24)),
-                    borderSide: BorderSide(color: AppTheme.borderColor),
+              child: Container(
+                constraints: const BoxConstraints(
+                  minHeight: 48,
+                  maxHeight: 150,
+                ),
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  enabled: widget.enabled,
+                  maxLines: null,
+                  minLines: 1,
+                  textInputAction: TextInputAction.newline,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.5,
                   ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(24)),
-                    borderSide: BorderSide(color: AppTheme.borderColor),
-                  ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(24)),
-                    borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+                  decoration: InputDecoration(
+                    hintText: 'Type a message...',
+                    hintStyle: TextStyle(
+                      color: AppTheme.textTertiaryColor,
+                      fontSize: 16,
+                    ),
+                    filled: true,
+                    fillColor: AppTheme.backgroundColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: const BorderSide(color: AppTheme.borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: const BorderSide(color: AppTheme.borderColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: const BorderSide(
+                        color: AppTheme.primaryColor,
+                        width: 2,
+                      ),
+                    ),
+                    disabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide(
+                        color: AppTheme.borderColor.withOpacity(0.5),
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
             Container(
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: _hasText && widget.enabled
                     ? AppTheme.primaryColor
-                    : AppTheme.surfaceColor,
+                    : AppTheme.backgroundColor,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppTheme.borderColor,
-                  width: 1,
+                  color: _hasText && widget.enabled
+                      ? AppTheme.primaryColor
+                      : AppTheme.borderColor,
+                  width: 1.5,
                 ),
+                boxShadow: _hasText && widget.enabled
+                    ? [
+                        BoxShadow(
+                          color: AppTheme.primaryColor.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
               ),
               child: IconButton(
                 icon: Icon(
-                  Icons.send,
+                  Icons.send_rounded,
+                  size: 22,
                   color: _hasText && widget.enabled
                       ? Colors.white
                       : AppTheme.textTertiaryColor,
                 ),
                 onPressed: _hasText && widget.enabled ? _handleSend : null,
+                padding: EdgeInsets.zero,
               ),
             ),
           ],

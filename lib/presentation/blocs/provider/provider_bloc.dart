@@ -3,6 +3,9 @@ import 'package:equatable/equatable.dart';
 import '../../../domain/entities/provider_config.dart';
 import '../../../domain/usecases/provider/add_provider.dart';
 import '../../../domain/usecases/provider/get_providers.dart';
+import '../../../domain/usecases/provider/delete_provider.dart';
+import '../../../domain/usecases/provider/update_provider.dart';
+import '../../../domain/usecases/provider/set_default_provider.dart';
 
 part 'provider_event.dart';
 part 'provider_state.dart';
@@ -10,10 +13,16 @@ part 'provider_state.dart';
 class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
   final AddProvider addProvider;
   final GetProviders getProviders;
+  final DeleteProvider deleteProvider;
+  final UpdateProvider updateProvider;
+  final SetDefaultProvider setDefaultProvider;
 
   ProviderBloc({
     required this.addProvider,
     required this.getProviders,
+    required this.deleteProvider,
+    required this.updateProvider,
+    required this.setDefaultProvider,
   }) : super(ProviderInitial()) {
     on<LoadProvidersEvent>(_onLoadProviders);
     on<AddProviderEvent>(_onAddProvider);
@@ -84,18 +93,28 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
 
     final currentState = state as ProviderLoaded;
     
-    // Update all providers to set the selected one as default
-    final updatedProviders = currentState.providers.map((p) {
-      return p.copyWith(isDefault: p.id == event.providerId);
-    }).toList();
+    // First, set the default provider
+    final setDefaultResult = await setDefaultProvider(event.providerId);
+    
+    await setDefaultResult.fold(
+      (failure) async {
+        emit(ProviderError(message: failure.toString()));
+      },
+      (_) async {
+        // Update all providers to reflect the new default
+        final updatedProviders = currentState.providers.map((p) {
+          return p.copyWith(isDefault: p.id == event.providerId);
+        }).toList();
 
-    // Save each provider (in a real implementation, you'd have an update method)
-    for (final provider in updatedProviders) {
-      await addProvider(provider);
-    }
+        // Update each provider
+        for (final provider in updatedProviders) {
+          await updateProvider(provider);
+        }
 
-    // Reload providers
-    add(LoadProvidersEvent());
+        // Reload providers
+        add(LoadProvidersEvent());
+      },
+    );
   }
 
   Future<void> _onDeleteProvider(
@@ -104,25 +123,15 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
   ) async {
     if (state is! ProviderLoaded) return;
 
-    final currentState = state as ProviderLoaded;
-    final providerToDelete = currentState.providers.firstWhere(
-      (p) => p.id == event.providerId,
-      orElse: () => throw Exception('Provider not found'),
+    // Delete the provider
+    final result = await deleteProvider(event.providerId);
+
+    result.fold(
+      (failure) => emit(ProviderError(message: failure.toString())),
+      (_) {
+        // Reload providers after successful deletion
+        add(LoadProvidersEvent());
+      },
     );
-
-    // Delete the provider using the repository's delete method
-    // Since we only have addProvider use case, we need to save without it
-    // The repository handles deletion internally
-    final updatedProviders = currentState.providers
-        .where((p) => p.id != event.providerId)
-        .toList();
-
-    // Save all remaining providers
-    for (final provider in updatedProviders) {
-      await addProvider(provider);
-    }
-
-    // Reload providers
-    add(LoadProvidersEvent());
   }
 }

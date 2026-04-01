@@ -59,9 +59,18 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionState> {
 
     final result = await disconnectSSH();
 
-    result.fold(
-      (failure) => emit(ConnectionError(message: failure.toString())),
-      (_) => emit(ConnectionDisconnected()),
+    await result.fold(
+      (failure) async {
+        emit(ConnectionError(message: failure.toString()));
+      },
+      (_) async {
+        // After disconnect, reload saved configs to show them
+        final configsResult = await getSavedConfigs();
+        configsResult.fold(
+          (failure) => emit(ConnectionDisconnected()),
+          (configs) => emit(ConnectionConfigsLoaded(configs: configs)),
+        );
+      },
     );
   }
 

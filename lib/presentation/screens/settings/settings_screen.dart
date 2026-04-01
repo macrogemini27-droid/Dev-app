@@ -5,8 +5,20 @@ import 'package:claude_code_mobile/presentation/blocs/connection/connection_bloc
 import 'package:claude_code_mobile/presentation/screens/settings/widgets/ssh_config_form.dart';
 import 'package:claude_code_mobile/presentation/screens/settings/provider_management_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load saved SSH configs when screen opens
+    context.read<connection.ConnectionBloc>().add(connection.LoadSavedConfigsEvent());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +120,65 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildSavedConnections(BuildContext context) {
     return BlocBuilder<connection.ConnectionBloc, connection.ConnectionState>(
       builder: (context, state) {
-        // TODO: Load saved connections from storage
+        if (state is connection.ConnectionLoadingConfigs) {
+          return const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (state is connection.ConnectionConfigsLoaded) {
+          if (state.configs.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(
+                child: Text(
+                  'No saved connections',
+                  style: TextStyle(color: AppTheme.textTertiaryColor),
+                ),
+              ),
+            );
+          }
+
+          return Column(
+            children: state.configs.map((config) {
+              return ListTile(
+                leading: const Icon(Icons.dns),
+                title: Text(config.name),
+                subtitle: Text('${config.username}@${config.host}:${config.port}'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    _showDeleteConfirmation(context, config);
+                  },
+                ),
+                onTap: () {
+                  context.read<connection.ConnectionBloc>().add(
+                        connection.ConnectToServerEvent(config: config),
+                      );
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
+          );
+        }
+
+        // For other states (Connected, Disconnected, etc.), try to load configs
+        if (state is connection.ConnectionConnected ||
+            state is connection.ConnectionDisconnected ||
+            state is connection.ConnectionInitial) {
+          // Trigger load if not already loading
+          Future.microtask(() {
+            if (state is! connection.ConnectionLoadingConfigs) {
+              context.read<connection.ConnectionBloc>().add(
+                    connection.LoadSavedConfigsEvent(),
+                  );
+            }
+          });
+        }
+
         return const Padding(
           padding: EdgeInsets.all(16.0),
           child: Center(
@@ -119,6 +189,34 @@ class SettingsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, config) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Connection'),
+        content: Text('Are you sure you want to delete "${config.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              context.read<connection.ConnectionBloc>().add(
+                    connection.DeleteConfigEvent(configId: config.id),
+                  );
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 
