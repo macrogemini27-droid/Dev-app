@@ -246,7 +246,7 @@ class _SSHConfigFormState extends State<SSHConfigForm> {
       );
 
       context.read<connection.ConnectionBloc>().add(
-            connection.ConnectToServerEvent(config),
+            connection.ConnectToServerEvent(config: config),
           );
 
       Navigator.pop(context);
