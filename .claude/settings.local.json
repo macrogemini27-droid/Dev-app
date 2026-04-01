@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find src:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
