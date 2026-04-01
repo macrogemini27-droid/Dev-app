@@ -147,35 +147,3 @@ class SSHConfigRepositoryImpl implements SSHConfigRepository {
     return saveConfig(config);
   }
 }
-
-extension SSHConfigCopyWith on SSHConfig {
-  SSHConfig copyWith({
-    String? id,
-    String? name,
-    String? host,
-    int? port,
-    String? username,
-    SSHAuthType? authType,
-    String? password,
-    String? privateKeyPath,
-    String? passphrase,
-    bool? verifyHostKey,
-    String? workingDirectory,
-    DateTime? lastConnected,
-  }) {
-    return SSHConfig(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      host: host ?? this.host,
-      port: port ?? this.port,
-      username: username ?? this.username,
-      authType: authType ?? this.authType,
-      password: password ?? this.password,
-      privateKeyPath: privateKeyPath ?? this.privateKeyPath,
-      passphrase: passphrase ?? this.passphrase,
-      verifyHostKey: verifyHostKey ?? this.verifyHostKey,
-      workingDirectory: workingDirectory ?? this.workingDirectory,
-      lastConnected: lastConnected ?? this.lastConnected,
-    );
-  }
-}
