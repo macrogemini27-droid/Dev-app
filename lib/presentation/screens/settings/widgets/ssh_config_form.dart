@@ -249,6 +249,11 @@ class _SSHConfigFormState extends State<SSHConfigForm> {
             connection.ConnectToServerEvent(config: config),
           );
 
+      // Reload configs after saving
+      context.read<connection.ConnectionBloc>().add(
+            connection.LoadSavedConfigsEvent(),
+          );
+
       Navigator.pop(context);
       
       // Show connecting snackbar

@@ -28,3 +28,14 @@ class ConnectionStatusChangedEvent extends ConnectionEvent {
   @override
   List<Object?> get props => [status];
 }
+
+class LoadSavedConfigsEvent extends ConnectionEvent {}
+
+class DeleteConfigEvent extends ConnectionEvent {
+  final String configId;
+
+  const DeleteConfigEvent({required this.configId});
+
+  @override
+  List<Object?> get props => [configId];
+}

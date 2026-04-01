@@ -42,3 +42,14 @@ class ConnectionError extends ConnectionState {
   @override
   List<Object?> get props => [message, config];
 }
+
+class ConnectionLoadingConfigs extends ConnectionState {}
+
+class ConnectionConfigsLoaded extends ConnectionState {
+  final List<SSHConfig> configs;
+
+  const ConnectionConfigsLoaded({required this.configs});
+
+  @override
+  List<Object?> get props => [configs];
+}

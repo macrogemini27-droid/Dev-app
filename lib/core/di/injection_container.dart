@@ -8,16 +8,21 @@ import '../../data/datasources/local/secure_storage_service.dart';
 import '../../data/datasources/ssh/ssh_client_impl.dart';
 import '../../data/datasources/api/anthropic_api_client.dart';
 import '../../data/repositories/ssh_repository_impl.dart';
+import '../../data/repositories/ssh_config_repository_impl.dart';
 import '../../data/repositories/session_repository_impl.dart';
 import '../../data/repositories/provider_repository_impl.dart';
 import '../../data/repositories/tool_repository_impl.dart';
 import '../../domain/repositories/ssh_repository.dart';
+import '../../domain/repositories/ssh_config_repository.dart';
 import '../../domain/repositories/session_repository.dart';
 import '../../domain/repositories/provider_repository.dart';
 import '../../domain/repositories/tool_repository.dart';
 import '../../domain/usecases/ssh/connect_ssh.dart';
 import '../../domain/usecases/ssh/disconnect_ssh.dart';
 import '../../domain/usecases/ssh/execute_command.dart';
+import '../../domain/usecases/ssh/save_ssh_config.dart';
+import '../../domain/usecases/ssh/get_saved_configs.dart';
+import '../../domain/usecases/ssh/delete_ssh_config.dart';
 import '../../domain/usecases/session/create_session.dart';
 import '../../domain/usecases/session/load_session.dart';
 import '../../domain/usecases/session/save_message.dart';
@@ -52,6 +57,12 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<SSHRepository>(
     () => SSHRepositoryImpl(sshClient: sl()),
   );
+  sl.registerLazySingleton<SSHConfigRepository>(
+    () => SSHConfigRepositoryImpl(
+      localStorage: sl(),
+      secureStorage: sl(),
+    ),
+  );
   sl.registerLazySingleton<SessionRepository>(
     () => SessionRepositoryImpl(databaseHelper: sl()),
   );
@@ -69,6 +80,9 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => ConnectSSH(sl()));
   sl.registerLazySingleton(() => DisconnectSSH(sl()));
   sl.registerLazySingleton(() => ExecuteCommand(sl()));
+  sl.registerLazySingleton(() => SaveSSHConfig(sl()));
+  sl.registerLazySingleton(() => GetSavedConfigs(sl()));
+  sl.registerLazySingleton(() => DeleteSSHConfig(sl()));
 
   // Use Cases - Session
   sl.registerLazySingleton(() => CreateSession(sl()));
@@ -87,6 +101,9 @@ Future<void> initializeDependencies() async {
     () => ConnectionBloc(
       connectSSH: sl(),
       disconnectSSH: sl(),
+      saveSSHConfig: sl(),
+      getSavedConfigs: sl(),
+      deleteSSHConfig: sl(),
     ),
   );
   sl.registerFactory(
