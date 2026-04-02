@@ -175,47 +175,4 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionState> {
       },
     );
   }
-        break;
-      case SSHConnectionStatus.disconnected:
-        emit(ConnectionDisconnected());
-        break;
-      case SSHConnectionStatus.error:
-        emit(const ConnectionError(message: 'Connection error'));
-        break;
-      case SSHConnectionStatus.reconnecting:
-        emit(ConnectionReconnecting());
-        break;
-      default:
-        break;
-    }
-  }
-
-  Future<void> _onLoadSavedConfigs(
-    LoadSavedConfigsEvent event,
-    Emitter<ConnectionState> emit,
-  ) async {
-    emit(ConnectionLoadingConfigs());
-
-    final result = await getSavedConfigs();
-
-    result.fold(
-      (failure) => emit(ConnectionError(message: failure.toString())),
-      (configs) => emit(ConnectionConfigsLoaded(configs: configs)),
-    );
-  }
-
-  Future<void> _onDeleteConfig(
-    DeleteConfigEvent event,
-    Emitter<ConnectionState> emit,
-  ) async {
-    final result = await deleteSSHConfig(event.configId);
-
-    result.fold(
-      (failure) => emit(ConnectionError(message: failure.toString())),
-      (_) {
-        // Reload configs after deletion
-        add(LoadSavedConfigsEvent());
-      },
-    );
-  }
 }
