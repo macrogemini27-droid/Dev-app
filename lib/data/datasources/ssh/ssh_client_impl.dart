@@ -66,7 +66,7 @@ class SSHClientImpl {
   Future<void> disconnect() async {
     try {
       _logger.info('Disconnecting from SSH server', tag: 'SSH');
-      _updateStatus(SSHConnectionStatus.disconnecting);
+      _updateStatus(SSHConnectionStatus.disconnected);
 
       _sftpClient?.close();
       _session?.close();
@@ -98,10 +98,7 @@ class SSHClientImpl {
     try {
       _logger.debug('Executing command: $command', tag: 'SSH');
       
-      final result = await _client!.run(
-        command,
-        timeout: Duration(seconds: AppConstants.sshCommandTimeout),
-      );
+      final result = await _client!.run(command);
 
       final output = utf8.decode(result);
       _logger.debug('Command executed successfully, output length: ${output.length}', tag: 'SSH');

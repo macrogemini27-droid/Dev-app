@@ -229,8 +229,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     _logger.debug('Tool arguments: ${event.arguments}', tag: 'ChatBloc');
     
     final result = await executeTool(
-      toolName: event.toolName,
-      arguments: event.arguments,
+      ToolExecutionParams(
+        toolName: event.toolName,
+        arguments: event.arguments,
+      ),
     );
 
     return result.fold(

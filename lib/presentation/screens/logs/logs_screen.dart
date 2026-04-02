@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../core/services/app_logger.dart';
-import '../../core/theme/app_theme.dart';
+import '../../../core/services/app_logger.dart';
+import '../../../core/theme/app_theme.dart';
 
 class LogsScreen extends StatefulWidget {
   const LogsScreen({super.key});
