@@ -82,6 +82,15 @@ class _SSHConfigFormState extends State<SSHConfigForm> {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a host';
                   }
+                  // Basic hostname/IP validation
+                  final trimmed = value.trim();
+                  if (trimmed.isEmpty) {
+                    return 'Host cannot be empty';
+                  }
+                  // Check for invalid characters
+                  if (trimmed.contains(' ') || trimmed.contains('\n')) {
+                    return 'Host cannot contain spaces or newlines';
+                  }
                   return null;
                 },
               ),

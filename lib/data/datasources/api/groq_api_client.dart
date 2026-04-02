@@ -10,7 +10,7 @@ class GroqApiClient extends BaseApiClient {
 
   GroqApiClient({
     required super.config,
-  }) {
+  }) : super() {
     _dio = Dio(
       BaseOptions(
         baseUrl: getBaseUrl(),

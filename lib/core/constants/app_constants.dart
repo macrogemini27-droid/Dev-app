@@ -24,7 +24,7 @@ class AppConstants {
 
   // API
   static const String anthropicApiUrl = 'https://api.anthropic.com/v1';
-  static const String defaultModel = 'claude-sonnet-4';
+  static const String defaultModel = 'claude-3-5-sonnet-20241022';
   static const int maxTokens = 4096;
 
   // UI

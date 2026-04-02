@@ -37,9 +37,11 @@ class GlobTool extends BaseTool {
     final path = arguments['path'] as String;
     final pattern = arguments['pattern'] as String?;
 
+    // Escape shell arguments to prevent command injection
+    final escapedPath = _escapeShellArg(path);
     final command = pattern != null
-        ? 'find $path -name "$pattern"'
-        : 'ls -la $path';
+        ? 'find $escapedPath -name ${_escapeShellArg(pattern)}'
+        : 'ls -la $escapedPath';
     
     final result = await sshRepository.executeCommand(command);
 
@@ -47,5 +49,13 @@ class GlobTool extends BaseTool {
       (failure) => 'List failed: ${failure.message}',
       (output) => output.isEmpty ? 'No files found' : output,
     );
+  }
+
+  /// Escapes a shell argument by wrapping it in single quotes
+  /// and escaping any single quotes within the argument
+  String _escapeShellArg(String arg) {
+    // Replace single quotes with '\'' (end quote, escaped quote, start quote)
+    final escaped = arg.replaceAll("'", "'\\''");
+    return "'$escaped'";
   }
 }

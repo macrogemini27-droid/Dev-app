@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:claude_code_mobile/core/constants/app_constants.dart';
 import '../../../domain/entities/provider_config.dart';
 import '../../../domain/entities/message.dart';
 import '../../../domain/entities/tool.dart';
@@ -11,7 +10,7 @@ class AnthropicApiClient extends BaseApiClient {
 
   AnthropicApiClient({
     required super.config,
-  }) {
+  }) : super() {
     _dio = Dio(
       BaseOptions(
         baseUrl: getBaseUrl(),

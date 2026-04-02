@@ -307,44 +307,42 @@ You are currently connected to a remote server. Use the available tools to help 
     final result = await loadSession(event.sessionId);
 
     result.fold(
-      (failure) {
+      (failure) async {
         // If session not found, create a new one
         if (failure.toString().contains('Session not found')) {
           // Get connection info
-          final providersResult = getProviders();
-          providersResult.then((providersEither) {
-            providersEither.fold(
-              (error) => emit(ChatError(message: 'No provider configured. Please add a provider in settings.')),
-              (providers) {
-                if (providers.isEmpty) {
-                  emit(ChatError(message: 'No provider configured. Please add a provider in settings.'));
-                  return;
-                }
-                
-                final defaultProvider = providers.firstWhere(
-                  (p) => p.isDefault,
-                  orElse: () => providers.first,
-                );
-                
-                // Create new session
-                final newSession = Session(
-                  id: event.sessionId,
-                  name: 'New Chat',
-                  sshConfigId: 'default',
-                  providerId: defaultProvider.id,
-                  workingDirectory: '/home',
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  messages: [],
-                );
-                
-                emit(ChatLoaded(
-                  session: newSession,
-                  messages: [],
-                ));
-              },
-            );
-          });
+          final providersResult = await getProviders();
+          providersResult.fold(
+            (error) => emit(ChatError(message: 'No provider configured. Please add a provider in settings.')),
+            (providers) {
+              if (providers.isEmpty) {
+                emit(ChatError(message: 'No provider configured. Please add a provider in settings.'));
+                return;
+              }
+              
+              final defaultProvider = providers.firstWhere(
+                (p) => p.isDefault,
+                orElse: () => providers.first,
+              );
+              
+              // Create new session
+              final newSession = Session(
+                id: event.sessionId,
+                name: 'New Chat',
+                sshConfigId: 'default',
+                providerId: defaultProvider.id,
+                workingDirectory: '/home',
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                messages: [],
+              );
+              
+              emit(ChatLoaded(
+                session: newSession,
+                messages: [],
+              ));
+            },
+          );
         } else {
           emit(ChatError(message: failure.toString()));
         }

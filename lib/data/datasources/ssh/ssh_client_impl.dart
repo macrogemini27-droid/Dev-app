@@ -181,34 +181,6 @@ class SSHClientImpl {
     return "'$escaped'";
   }
 
-  /// Legacy method - kept for backward compatibility but not recommended
-  /// Use _wrapInSingleQuotes instead for better security
-  @Deprecated('Use _wrapInSingleQuotes for better security')
-  String _escapeShellCommand(String command) {
-    // This method has known vulnerabilities with:
-    // - Single quotes, semicolons, pipes, redirections, etc.
-    // Use _wrapInSingleQuotes instead
-    return command
-        .replaceAll('\x00', '') // Remove null bytes
-        .replaceAll(r'\', r'\\')
-        .replaceAll(r'$', r'\$')
-        .replaceAll(r'`', r'\`')
-        .replaceAll(r'"', r'\"')
-        .replaceAll('\n', r'\n')
-        .replaceAll('\r', r'\r')
-        .replaceAll('\t', r'\t')
-        .replaceAll("'", r"\'")
-        .replaceAll(';', r'\;')
-        .replaceAll('|', r'\|')
-        .replaceAll('&', r'\&')
-        .replaceAll('>', r'\>')
-        .replaceAll('<', r'\<')
-        .replaceAll('!', r'\!')
-        .replaceAll('~', r'\~')
-        .replaceAll('*', r'\*')
-        .replaceAll('?', r'\?');
-  }
-
   String _escapeShellArgument(String arg) {
     // Remove null bytes and wrap in single quotes
     // Single quotes prevent all shell expansion

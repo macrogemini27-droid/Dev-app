@@ -8,12 +8,10 @@ import '../../../domain/entities/tool.dart';
 /// Base class for all API clients
 abstract class BaseApiClient {
   final ProviderConfig config;
-  final http.Client httpClient;
 
   BaseApiClient({
     required this.config,
-    http.Client? httpClient,
-  }) : httpClient = httpClient ?? http.Client();
+  });
 
   /// Stream chat completion with tool support
   Stream<ApiStreamEvent> streamChatCompletion({
@@ -44,7 +42,7 @@ abstract class BaseApiClient {
 
   /// Dispose resources
   void dispose() {
-    httpClient.close();
+    // Override in subclasses to dispose specific resources
   }
 }
 

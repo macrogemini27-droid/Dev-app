@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/errors/failures.dart';
@@ -163,10 +164,10 @@ class SessionRepositoryImpl implements SessionRepository {
         'content': message.content,
         'timestamp': message.timestamp.millisecondsSinceEpoch,
         'tool_calls': message.toolCalls != null
-            ? message.toolCalls!.map((tc) => tc.toJson()).toList().toString()
+            ? jsonEncode(message.toolCalls!.map((tc) => tc.toJson()).toList())
             : null,
         'tool_results': message.toolResults != null
-            ? message.toolResults!.map((tr) => tr.toJson()).toList().toString()
+            ? jsonEncode(message.toolResults!.map((tr) => tr.toJson()).toList())
             : null,
         'status': message.status?.name,
       });
@@ -206,6 +207,27 @@ class SessionRepositoryImpl implements SessionRepository {
       );
 
       final messages = results.map((data) {
+        // Parse tool calls and results from JSON
+        List<ToolCall>? toolCalls;
+        if (data['tool_calls'] != null) {
+          try {
+            final toolCallsJson = jsonDecode(data['tool_calls'] as String) as List;
+            toolCalls = toolCallsJson.map((tc) => ToolCall.fromJson(tc)).toList();
+          } catch (e) {
+            // Ignore parsing errors for backward compatibility
+          }
+        }
+
+        List<ToolResult>? toolResults;
+        if (data['tool_results'] != null) {
+          try {
+            final toolResultsJson = jsonDecode(data['tool_results'] as String) as List;
+            toolResults = toolResultsJson.map((tr) => ToolResult.fromJson(tr)).toList();
+          } catch (e) {
+            // Ignore parsing errors for backward compatibility
+          }
+        }
+
         return Message(
           id: data['id'] as String,
           sessionId: data['session_id'] as String,
@@ -216,6 +238,8 @@ class SessionRepositoryImpl implements SessionRepository {
           timestamp: DateTime.fromMillisecondsSinceEpoch(
             data['timestamp'] as int,
           ),
+          toolCalls: toolCalls,
+          toolResults: toolResults,
           status: data['status'] != null
               ? MessageStatus.values.firstWhere(
                   (e) => e.name == data['status'],

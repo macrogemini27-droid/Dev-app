@@ -37,12 +37,24 @@ class GrepTool extends BaseTool {
     final pattern = arguments['pattern'] as String;
     final path = arguments['path'] as String? ?? '.';
 
-    final command = 'grep -r "$pattern" $path';
+    // Escape shell arguments to prevent command injection
+    final escapedPattern = _escapeShellArg(pattern);
+    final escapedPath = _escapeShellArg(path);
+
+    final command = 'grep -r $escapedPattern $escapedPath';
     final result = await sshRepository.executeCommand(command);
 
     return result.fold(
       (failure) => 'Search failed: ${failure.message}',
       (output) => output.isEmpty ? 'No matches found' : output,
     );
+  }
+
+  /// Escapes a shell argument by wrapping it in single quotes
+  /// and escaping any single quotes within the argument
+  String _escapeShellArg(String arg) {
+    // Replace single quotes with '\'' (end quote, escaped quote, start quote)
+    final escaped = arg.replaceAll("'", "'\\''");
+    return "'$escaped'";
   }
 }

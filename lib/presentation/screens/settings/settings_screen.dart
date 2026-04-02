@@ -170,8 +170,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             state is connection.ConnectionDisconnected ||
             state is connection.ConnectionInitial) {
           // Trigger load if not already loading
-          Future.microtask(() {
-            if (state is! connection.ConnectionLoadingConfigs) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted && state is! connection.ConnectionLoadingConfigs) {
               context.read<connection.ConnectionBloc>().add(
                     connection.LoadSavedConfigsEvent(),
                   );

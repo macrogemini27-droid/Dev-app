@@ -10,7 +10,7 @@ class GeminiApiClient extends BaseApiClient {
 
   GeminiApiClient({
     required super.config,
-  }) {
+  }) : super() {
     _dio = Dio(
       BaseOptions(
         baseUrl: getBaseUrl(),
