@@ -1,14 +1,17 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import '../../../core/services/app_logger.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
+  final _logger = AppLogger();
 
   DatabaseHelper._init();
 
   Future<Database> get database async {
     if (_database != null) return _database!;
+    _logger.info('Initializing database', tag: 'Database');
     _database = await _initDB('claude_code_mobile.db');
     return _database!;
   }
@@ -16,12 +19,14 @@ class DatabaseHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
+    _logger.debug('Database path: $path', tag: 'Database');
 
     return await openDatabase(
       path,
       version: 1,
       onCreate: _createDB,
       onConfigure: (db) async {
+        _logger.debug('Configuring database (enabling foreign keys)', tag: 'Database');
         // Enable foreign key constraints
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -29,7 +34,10 @@ class DatabaseHelper {
   }
 
   Future<void> _createDB(Database db, int version) async {
+    _logger.info('Creating database tables (version $version)', tag: 'Database');
+    
     // Sessions table
+    _logger.debug('Creating sessions table', tag: 'Database');
     await db.execute('''
       CREATE TABLE sessions (
         id TEXT PRIMARY KEY,
@@ -43,6 +51,7 @@ class DatabaseHelper {
     ''');
 
     // Messages table
+    _logger.debug('Creating messages table', tag: 'Database');
     await db.execute('''
       CREATE TABLE messages (
         id TEXT PRIMARY KEY,
@@ -58,6 +67,7 @@ class DatabaseHelper {
     ''');
 
     // Create indexes
+    _logger.debug('Creating database indexes', tag: 'Database');
     await db.execute('''
       CREATE INDEX idx_messages_session_id ON messages(session_id)
     ''');
@@ -67,6 +77,7 @@ class DatabaseHelper {
     ''');
 
     // SSH Configs table
+    _logger.debug('Creating ssh_configs table', tag: 'Database');
     await db.execute('''
       CREATE TABLE ssh_configs (
         id TEXT PRIMARY KEY,
@@ -79,9 +90,12 @@ class DatabaseHelper {
         last_connected INTEGER
       )
     ''');
+    
+    _logger.info('Database tables created successfully', tag: 'Database');
   }
 
   Future<void> close() async {
+    _logger.info('Closing database', tag: 'Database');
     final db = await instance.database;
     db.close();
   }

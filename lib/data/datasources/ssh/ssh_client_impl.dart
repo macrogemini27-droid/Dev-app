@@ -4,6 +4,7 @@ import 'package:dartssh2/dartssh2.dart';
 import '../../../core/errors/exceptions.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../domain/entities/ssh_config.dart';
+import '../../../core/services/app_logger.dart';
 
 class SSHClientImpl {
   SSHClient? _client;
@@ -12,6 +13,7 @@ class SSHClientImpl {
   String? _currentWorkingDirectory;
   final _connectionStatusController = StreamController<SSHConnectionStatus>.broadcast();
   SSHConnectionStatus _currentStatus = SSHConnectionStatus.disconnected;
+  final _logger = AppLogger();
 
   Stream<SSHConnectionStatus> get connectionStatus => _connectionStatusController.stream;
   bool get isConnected => _currentStatus == SSHConnectionStatus.connected;
@@ -19,6 +21,7 @@ class SSHClientImpl {
 
   Future<void> connect(SSHConfig config) async {
     try {
+      _logger.info('Connecting to SSH server: ${config.host}:${config.port}', tag: 'SSH');
       _updateStatus(SSHConnectionStatus.connecting);
 
       final socket = await SSHSocket.connect(
@@ -27,6 +30,7 @@ class SSHClientImpl {
         timeout: Duration(seconds: AppConstants.sshConnectionTimeout),
       );
 
+      _logger.debug('SSH socket connected, authenticating...', tag: 'SSH');
       _client = SSHClient(
         socket,
         username: config.username,
@@ -43,11 +47,14 @@ class SSHClientImpl {
             : null,
       );
 
+      _logger.debug('Opening SSH shell session', tag: 'SSH');
       _session = await _client!.shell();
       _currentWorkingDirectory = config.workingDirectory ?? '/';
 
+      _logger.info('Successfully connected to ${config.host}', tag: 'SSH');
       _updateStatus(SSHConnectionStatus.connected);
     } catch (e) {
+      _logger.error('SSH connection failed: ${e.toString()}', error: e, tag: 'SSH');
       _updateStatus(SSHConnectionStatus.error);
       throw SSHException(
         message: 'Failed to connect to SSH server: ${e.toString()}',
@@ -58,6 +65,56 @@ class SSHClientImpl {
 
   Future<void> disconnect() async {
     try {
+      _logger.info('Disconnecting from SSH server', tag: 'SSH');
+      _updateStatus(SSHConnectionStatus.disconnecting);
+
+      _sftpClient?.close();
+      _session?.close();
+      _client?.close();
+
+      _sftpClient = null;
+      _session = null;
+      _client = null;
+      _currentWorkingDirectory = null;
+
+      _logger.info('Successfully disconnected', tag: 'SSH');
+      _updateStatus(SSHConnectionStatus.disconnected);
+    } catch (e) {
+      _logger.error('Error during disconnect: ${e.toString()}', error: e, tag: 'SSH');
+      _updateStatus(SSHConnectionStatus.error);
+      throw SSHException(
+        message: 'Failed to disconnect: ${e.toString()}',
+        details: e,
+      );
+    }
+  }
+
+  Future<String> executeCommand(String command) async {
+    if (!isConnected || _client == null) {
+      _logger.error('Attempted to execute command while not connected', tag: 'SSH');
+      throw SSHException(message: 'Not connected to SSH server');
+    }
+
+    try {
+      _logger.debug('Executing command: $command', tag: 'SSH');
+      
+      final result = await _client!.run(
+        command,
+        timeout: Duration(seconds: AppConstants.sshCommandTimeout),
+      );
+
+      final output = utf8.decode(result);
+      _logger.debug('Command executed successfully, output length: ${output.length}', tag: 'SSH');
+      
+      return output;
+    } catch (e) {
+      _logger.error('Command execution failed: $command', error: e, tag: 'SSH');
+      throw SSHException(
+        message: 'Failed to execute command: ${e.toString()}',
+        details: e,
+      );
+    }
+  }
       _sftpClient?.close();
       _session?.close();
       _client?.close();

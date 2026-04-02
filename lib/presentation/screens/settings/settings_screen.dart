@@ -4,6 +4,7 @@ import 'package:claude_code_mobile/core/theme/app_theme.dart';
 import 'package:claude_code_mobile/presentation/blocs/connection/connection_bloc.dart' as connection;
 import 'package:claude_code_mobile/presentation/screens/settings/widgets/ssh_config_form.dart';
 import 'package:claude_code_mobile/presentation/screens/settings/provider_management_screen.dart';
+import 'package:claude_code_mobile/presentation/screens/logs/logs_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -62,6 +63,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const Divider(),
               _buildSavedConnections(context),
+            ],
+          ),
+          _buildSection(
+            context,
+            title: 'Developer',
+            children: [
+              ListTile(
+                leading: const Icon(Icons.bug_report),
+                title: const Text('View Logs'),
+                subtitle: const Text('View application logs and debug information'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LogsScreen(),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
           _buildSection(

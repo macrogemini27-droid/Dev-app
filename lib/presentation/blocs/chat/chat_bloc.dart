@@ -12,6 +12,7 @@ import '../../../domain/usecases/session/load_session.dart';
 import '../../../domain/usecases/provider/get_providers.dart';
 import '../../../data/datasources/api/api_client_factory.dart';
 import '../../../data/datasources/api/base_api_client.dart';
+import '../../../core/services/app_logger.dart';
 
 part 'chat_event.dart';
 part 'chat_state.dart';
@@ -22,6 +23,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final LoadSession loadSession;
   final GetProviders getProviders;
   final _uuid = const Uuid();
+  final _logger = AppLogger();
   
   BaseApiClient? _apiClient;
   StreamSubscription? _streamSubscription;
@@ -32,6 +34,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     required this.loadSession,
     required this.getProviders,
   }) : super(ChatInitial()) {
+    _logger.info('ChatBloc initialized', tag: 'ChatBloc');
     on<SendMessageEvent>(_onSendMessage);
     on<LoadSessionEvent>(_onLoadSession);
     on<ToolExecutionStartedEvent>(_onToolExecutionStarted);
@@ -41,6 +44,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   @override
   Future<void> close() {
+    _logger.debug('ChatBloc closing', tag: 'ChatBloc');
     _streamSubscription?.cancel();
     _apiClient?.dispose();
     return super.close();
@@ -48,6 +52,177 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   Future<void> _onSendMessage(
     SendMessageEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (state is! ChatLoaded) {
+      _logger.warning('Attempted to send message but chat not loaded', tag: 'ChatBloc');
+      return;
+    }
+
+    _logger.info('Sending message: ${event.content.substring(0, event.content.length > 50 ? 50 : event.content.length)}...', tag: 'ChatBloc');
+    final currentState = state as ChatLoaded;
+    
+    // Get default provider
+    _logger.debug('Getting default provider', tag: 'ChatBloc');
+    final providersResult = await getProviders();
+    ProviderConfig? defaultProvider;
+    
+    providersResult.fold(
+      (failure) {
+        _logger.error('Failed to get providers: ${failure.toString()}', tag: 'ChatBloc');
+        return null;
+      },
+      (providers) {
+        if (providers.isNotEmpty) {
+          defaultProvider = providers.firstWhere(
+            (p) => p.isDefault,
+            orElse: () => providers.first,
+          );
+          _logger.debug('Using provider: ${defaultProvider!.name}', tag: 'ChatBloc');
+        }
+      },
+    );
+
+    if (defaultProvider == null) {
+      _logger.error('No provider configured', tag: 'ChatBloc');
+      emit(ChatError(message: 'No provider configured. Please add a provider in settings.'));
+      return;
+    }
+
+    // Create user message
+    final userMessage = Message(
+      id: _uuid.v4(),
+      sessionId: currentState.session.id,
+      role: MessageRole.user,
+      content: event.content,
+      timestamp: DateTime.now(),
+      status: MessageStatus.sent,
+    );
+
+    _logger.debug('Created user message: ${userMessage.id}', tag: 'ChatBloc');
+
+    // Add user message to UI
+    emit(currentState.copyWith(
+      messages: [...currentState.messages, userMessage],
+    ));
+
+    // Save user message
+    _logger.debug('Saving user message to database', tag: 'ChatBloc');
+    await saveMessage(userMessage);
+
+    // Create empty assistant message for streaming
+    final assistantMessageId = _uuid.v4();
+    final assistantMessage = Message(
+      id: assistantMessageId,
+      sessionId: currentState.session.id,
+      role: MessageRole.assistant,
+      content: '',
+      timestamp: DateTime.now(),
+      status: MessageStatus.sending,
+    );
+
+    emit(currentState.copyWith(
+      messages: [...currentState.messages, assistantMessage],
+      isStreaming: true,
+    ));
+
+    // Initialize API client
+    _logger.debug('Initializing API client', tag: 'ChatBloc');
+    _apiClient?.dispose();
+    _apiClient = ApiClientFactory.createClient(defaultProvider!);
+
+    // Get available tools
+    final tools = _getAvailableTools();
+    _logger.debug('Available tools: ${tools.length}', tag: 'ChatBloc');
+
+    // Build system prompt
+    final systemPrompt = _buildSystemPrompt();
+
+    try {
+      _logger.info('Starting streaming chat completion', tag: 'ChatBloc');
+      // Stream the response
+      final stream = _apiClient!.streamChatCompletion(
+        messages: currentState.messages.where((m) => m.id != assistantMessageId).toList(),
+        tools: tools,
+        systemPrompt: systemPrompt,
+      );
+
+      String accumulatedContent = '';
+      int chunkCount = 0;
+
+      await for (final event in stream) {
+        if (event is TextChunkEvent) {
+          chunkCount++;
+          accumulatedContent += event.text;
+          add(StreamingChunkReceivedEvent(chunk: event.text));
+        } else if (event is ToolCallEvent) {
+          _logger.info('Tool call received: ${event.toolName}', tag: 'ChatBloc');
+          // Handle tool execution
+          add(ToolExecutionStartedEvent(
+            toolCall: ToolCall(
+              id: event.toolCallId,
+              name: event.toolName,
+              input: event.arguments,
+            ),
+          ));
+
+          // Execute the tool
+          final toolResult = await _executeToolCall(event);
+          
+          add(ToolExecutionCompletedEvent(
+            toolCall: ToolCall(
+              id: event.toolCallId,
+              name: event.toolName,
+              input: event.arguments,
+            ),
+            result: ToolResult(
+              toolCallId: event.toolCallId,
+              content: toolResult,
+            ),
+          ));
+
+          // Add tool result to accumulated content
+          accumulatedContent += '\n\n[Tool: ${event.toolName}]\n$toolResult';
+        } else if (event is StreamEndEvent) {
+          _logger.info('Streaming completed. Received $chunkCount chunks', tag: 'ChatBloc');
+          // Streaming completed
+          break;
+        } else if (event is StreamErrorEvent) {
+          _logger.error('Stream error: ${event.error}', tag: 'ChatBloc');
+          emit(ChatError(message: event.error));
+          return;
+        }
+      }
+
+      // Update final message
+      _logger.debug('Saving final assistant message', tag: 'ChatBloc');
+      final finalMessage = assistantMessage.copyWith(
+        content: accumulatedContent,
+        status: MessageStatus.completed,
+      );
+
+      if (state is ChatLoaded) {
+        final updatedState = state as ChatLoaded;
+        final messages = [...updatedState.messages];
+        final index = messages.indexWhere((m) => m.id == assistantMessageId);
+        if (index != -1) {
+          messages[index] = finalMessage;
+        }
+
+        emit(updatedState.copyWith(
+          messages: messages,
+          isStreaming: false,
+        ));
+      }
+
+      // Save final message
+      await saveMessage(finalMessage);
+      _logger.info('Message exchange completed successfully', tag: 'ChatBloc');
+    } catch (e, stackTrace) {
+      _logger.error('Failed to send message', error: e, stackTrace: stackTrace, tag: 'ChatBloc');
+      emit(ChatError(message: 'Failed to send message: $e'));
+    }
+  }
     Emitter<ChatState> emit,
   ) async {
     if (state is! ChatLoaded) return;
@@ -197,21 +372,92 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   }
 
   Future<String> _executeToolCall(ToolCallEvent event) async {
-    try {
-      final result = await executeTool(
-        ToolExecutionParams(
-          toolName: event.toolName,
-          arguments: event.arguments,
-        ),
-      );
+    _logger.info('Executing tool: ${event.toolName}', tag: 'ChatBloc');
+    _logger.debug('Tool arguments: ${event.arguments}', tag: 'ChatBloc');
+    
+    final result = await executeTool(
+      toolName: event.toolName,
+      arguments: event.arguments,
+    );
 
-      return result.fold(
-        (failure) => 'Error: ${failure.toString()}',
-        (output) => output,
-      );
-    } catch (e) {
-      return 'Error executing tool: $e';
-    }
+    return result.fold(
+      (failure) {
+        _logger.error('Tool execution failed: ${failure.toString()}', tag: 'ChatBloc');
+        return 'Error: ${failure.toString()}';
+      },
+      (output) {
+        _logger.info('Tool executed successfully: ${event.toolName}', tag: 'ChatBloc');
+        return output;
+      },
+    );
+  }
+
+  Future<void> _onLoadSession(
+    LoadSessionEvent event,
+    Emitter<ChatState> emit,
+  ) async {
+    _logger.info('Loading session: ${event.sessionId}', tag: 'ChatBloc');
+    emit(ChatLoading());
+
+    final result = await loadSession(event.sessionId);
+
+    result.fold(
+      (failure) async {
+        _logger.warning('Session not found: ${event.sessionId}', tag: 'ChatBloc');
+        // If session not found, create a new one
+        if (failure.toString().contains('Session not found')) {
+          // Get connection info
+          final providersResult = await getProviders();
+          providersResult.fold(
+            (error) {
+              _logger.error('No provider configured', tag: 'ChatBloc');
+              emit(ChatError(message: 'No provider configured. Please add a provider in settings.'));
+            },
+            (providers) {
+              if (providers.isEmpty) {
+                _logger.error('No providers available', tag: 'ChatBloc');
+                emit(ChatError(message: 'No provider configured. Please add a provider in settings.'));
+                return;
+              }
+              
+              final defaultProvider = providers.firstWhere(
+                (p) => p.isDefault,
+                orElse: () => providers.first,
+              );
+              
+              _logger.info('Creating new session with provider: ${defaultProvider.name}', tag: 'ChatBloc');
+              // Create new session
+              final newSession = Session(
+                id: event.sessionId,
+                name: 'New Chat',
+                sshConfigId: 'default',
+                providerId: defaultProvider.id,
+                workingDirectory: '/home',
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                messages: [],
+              );
+              
+              emit(ChatLoaded(
+                session: newSession,
+                messages: [],
+              ));
+            },
+          );
+        } else {
+          _logger.error('Failed to load session: ${failure.toString()}', tag: 'ChatBloc');
+          emit(ChatError(message: failure.toString()));
+        }
+      },
+      (session) {
+        _logger.info('Session loaded successfully with ${session.messages.length} messages', tag: 'ChatBloc');
+        emit(ChatLoaded(
+          session: session,
+          messages: session.messages,
+        ));
+      },
+    );
+  }
   }
 
   List<Tool> _getAvailableTools() {
