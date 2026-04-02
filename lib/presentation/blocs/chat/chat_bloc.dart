@@ -311,7 +311,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       },
     );
   }
-  }
 
   List<Tool> _getAvailableTools() {
     return [
@@ -397,61 +396,6 @@ When helping users:
 You are currently connected to a remote server. Use the available tools to help the user with their coding tasks.''';
   }
 
-  Future<void> _onLoadSession(
-    LoadSessionEvent event,
-    Emitter<ChatState> emit,
-  ) async {
-    emit(ChatLoading());
-
-    final result = await loadSession(event.sessionId);
-
-    result.fold(
-      (failure) async {
-        // If session not found, create a new one
-        if (failure.toString().contains('Session not found')) {
-          // Get connection info
-          final providersResult = await getProviders();
-          providersResult.fold(
-            (error) => emit(ChatError(message: 'No provider configured. Please add a provider in settings.')),
-            (providers) {
-              if (providers.isEmpty) {
-                emit(ChatError(message: 'No provider configured. Please add a provider in settings.'));
-                return;
-              }
-              
-              final defaultProvider = providers.firstWhere(
-                (p) => p.isDefault,
-                orElse: () => providers.first,
-              );
-              
-              // Create new session
-              final newSession = Session(
-                id: event.sessionId,
-                name: 'New Chat',
-                sshConfigId: 'default',
-                providerId: defaultProvider.id,
-                workingDirectory: '/home',
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
-                messages: [],
-              );
-              
-              emit(ChatLoaded(
-                session: newSession,
-                messages: [],
-              ));
-            },
-          );
-        } else {
-          emit(ChatError(message: failure.toString()));
-        }
-      },
-      (session) => emit(ChatLoaded(
-        session: session,
-        messages: session.messages,
-      )),
-    );
-  }
 
   void _onToolExecutionStarted(
     ToolExecutionStartedEvent event,
