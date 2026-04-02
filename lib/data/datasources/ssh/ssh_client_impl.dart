@@ -115,46 +115,7 @@ class SSHClientImpl {
       );
     }
   }
-      _sftpClient?.close();
-      _session?.close();
-      _client?.close();
-      _sftpClient = null;
-      _session = null;
-      _client = null;
-      _currentWorkingDirectory = null;
-      _updateStatus(SSHConnectionStatus.disconnected);
-    } catch (e) {
-      throw SSHException(
-        message: 'Failed to disconnect: ${e.toString()}',
-        details: e,
-      );
-    }
-  }
 
-  Future<String> executeCommand(String command) async {
-    if (!isConnected) {
-      throw SSHException(message: 'Not connected to SSH server');
-    }
-
-    try {
-      // Wrap entire command in single quotes for maximum safety
-      // This prevents ALL shell expansion and injection
-      final safeCommand = _wrapInSingleQuotes(command);
-
-      final result = await _client!.run(safeCommand);
-
-      // dartssh2 returns Uint8List directly
-      return utf8.decode(result);
-    } catch (e) {
-      if (e is SSHException) rethrow;
-      throw SSHException(
-        message: 'Failed to execute command: ${e.toString()}',
-        details: e,
-      );
-    }
-  }
-
-  /// Get or create a cached SFTP client
   Future<SftpClient> _getSftpClient() async {
     if (_sftpClient != null) {
       return _sftpClient!;
@@ -225,28 +186,18 @@ class SSHClientImpl {
     _connectionStatusController.add(status);
   }
 
-  /// Wrap command in single quotes to prevent ALL shell expansion
-  /// This is the safest way to pass commands to shell
   String _wrapInSingleQuotes(String command) {
-    // Remove null bytes first
     final cleaned = command.replaceAll('\x00', '');
-    
-    // Escape single quotes by closing quote, adding escaped quote, reopening quote
-    // Example: "it's" becomes 'it'\''s'
     final escaped = cleaned.replaceAll("'", r"'\''");
-    
     return "'$escaped'";
   }
 
   String _escapeShellArgument(String arg) {
-    // Remove null bytes and wrap in single quotes
-    // Single quotes prevent all shell expansion
     final cleaned = arg.replaceAll('\x00', '');
     return "'${cleaned.replaceAll("'", r"'\''")}'";
   }
 
   Future<String> _readPrivateKey(String path) async {
-    // This would read from secure storage in production
     throw UnimplementedError('Private key reading not implemented');
   }
 
