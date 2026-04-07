@@ -258,7 +258,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     final result = await loadSession(event.sessionId);
 
     if (result.isRight()) {
-      final session = result.getOrElse((_) => throw StateError('unreachable'));
+      final session = result.getOrElse(() => throw StateError('unreachable'));
       _logger.info('Session loaded successfully with ${session.messages.length} messages', tag: 'ChatBloc');
       emit(ChatLoaded(
         session: session,
@@ -286,7 +286,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       return;
     }
 
-    final providers = providersResult.getOrElse((_) => []);
+    final providers = providersResult.getOrElse(() => []);
     if (providers.isEmpty) {
       _logger.error('No providers available', tag: 'ChatBloc');
       emit(ChatError(message: 'No provider configured. Please add a provider in settings.'));
