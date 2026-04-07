@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:dartssh2/dartssh2.dart';
 import '../../../core/errors/exceptions.dart';
 import '../../../core/constants/app_constants.dart';
@@ -66,7 +67,6 @@ class SSHClientImpl {
   Future<void> disconnect() async {
     try {
       _logger.info('Disconnecting from SSH server', tag: 'SSH');
-      _updateStatus(SSHConnectionStatus.disconnected);
 
       _sftpClient?.close();
       _session?.close();
@@ -195,7 +195,27 @@ class SSHClientImpl {
   }
 
   Future<String> _readPrivateKey(String path) async {
-    throw UnimplementedError('Private key reading not implemented');
+    try {
+      _logger.debug('Reading private key from: $path', tag: 'SSH');
+      // Read the private key file via SSH command on local device
+      // For mobile, the path is expected to be a local file path
+      final file = File(path);
+      if (!await file.exists()) {
+        throw SSHException(
+          message: 'Private key file not found at: $path',
+        );
+      }
+      final content = await file.readAsString();
+      _logger.debug('Private key read successfully', tag: 'SSH');
+      return content;
+    } catch (e) {
+      if (e is SSHException) rethrow;
+      _logger.error('Failed to read private key: ${e.toString()}', error: e, tag: 'SSH');
+      throw SSHException(
+        message: 'Failed to read private key file: ${e.toString()}',
+        details: e,
+      );
+    }
   }
 
   Future<void> dispose() async {

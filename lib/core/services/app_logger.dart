@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
@@ -38,7 +39,7 @@ class AppLogger {
       final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
       _logFile = File('${logsDir.path}/app_log_$dateStr.txt');
     } catch (e) {
-      print('Failed to initialize log file: $e');
+      debugPrint('Failed to initialize log file: $e');
     }
   }
 
@@ -63,7 +64,7 @@ class AppLogger {
         );
       }
     } catch (e) {
-      print('Failed to write to log file: $e');
+      debugPrint('Failed to write to log file: $e');
     }
   }
 
@@ -114,7 +115,7 @@ class _CustomOutput extends LogOutput {
   void output(OutputEvent event) {
     for (var line in event.lines) {
       appLogger._addToBuffer(line);
-      print(line);
+      debugPrint(line);
     }
   }
 }
