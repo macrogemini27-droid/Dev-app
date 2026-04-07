@@ -42,6 +42,10 @@ class GeminiApiClient extends BaseApiClient {
         ),
         data: {
           'contents': _convertMessages(messages, systemPrompt),
+          if (systemPrompt != null && systemPrompt.isNotEmpty)
+            'systemInstruction': {
+              'parts': [{'text': systemPrompt}],
+            },
           if (tools.isNotEmpty) 'tools': [{'functionDeclarations': _convertTools(tools)}],
           'generationConfig': {
             if (maxTokens != null) 'maxOutputTokens': maxTokens,
@@ -115,14 +119,9 @@ class GeminiApiClient extends BaseApiClient {
 
   List<Map<String, dynamic>> _convertMessages(List<Message> messages, String? systemPrompt) {
     final contents = <Map<String, dynamic>>[];
-    
-    // Add system prompt as first user message if provided
-    if (systemPrompt != null && systemPrompt.isNotEmpty) {
-      contents.add({
-        'role': 'user',
-        'parts': [{'text': systemPrompt}],
-      });
-    }
+
+    // System prompt is passed separately via systemInstruction in the request body,
+    // so we do not inject it as a user message here.
 
     for (final msg in messages) {
       contents.add({

@@ -102,8 +102,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     _logger.debug('Created user message: ${userMessage.id}', tag: 'ChatBloc');
 
     // Add user message to UI
+    final messagesWithUser = [...currentState.messages, userMessage];
     emit(currentState.copyWith(
-      messages: [...currentState.messages, userMessage],
+      messages: messagesWithUser,
     ));
 
     // Save user message
@@ -122,7 +123,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     );
 
     emit(currentState.copyWith(
-      messages: [...currentState.messages, assistantMessage],
+      messages: [...messagesWithUser, assistantMessage],
       isStreaming: true,
     ));
 
@@ -256,62 +257,63 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     final result = await loadSession(event.sessionId);
 
-    result.fold(
-      (failure) async {
-        _logger.warning('Session not found: ${event.sessionId}', tag: 'ChatBloc');
-        // If session not found, create a new one
-        if (failure.toString().contains('Session not found')) {
-          // Get connection info
-          final providersResult = await getProviders();
-          providersResult.fold(
-            (error) {
-              _logger.error('No provider configured', tag: 'ChatBloc');
-              emit(ChatError(message: 'No provider configured. Please add a provider in settings.'));
-            },
-            (providers) {
-              if (providers.isEmpty) {
-                _logger.error('No providers available', tag: 'ChatBloc');
-                emit(ChatError(message: 'No provider configured. Please add a provider in settings.'));
-                return;
-              }
-              
-              final defaultProvider = providers.firstWhere(
-                (p) => p.isDefault,
-                orElse: () => providers.first,
-              );
-              
-              _logger.info('Creating new session with provider: ${defaultProvider.name}', tag: 'ChatBloc');
-              // Create new session
-              final newSession = Session(
-                id: event.sessionId,
-                name: 'New Chat',
-                sshConfigId: 'default',
-                providerId: defaultProvider.id,
-                workingDirectory: '/home',
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
-                messages: [],
-              );
-              
-              emit(ChatLoaded(
-                session: newSession,
-                messages: [],
-              ));
-            },
-          );
-        } else {
-          _logger.error('Failed to load session: ${failure.toString()}', tag: 'ChatBloc');
-          emit(ChatError(message: failure.toString()));
-        }
-      },
-      (session) {
-        _logger.info('Session loaded successfully with ${session.messages.length} messages', tag: 'ChatBloc');
-        emit(ChatLoaded(
-          session: session,
-          messages: session.messages,
-        ));
-      },
+    if (result.isRight()) {
+      final session = result.getOrElse((_) => throw StateError('unreachable'));
+      _logger.info('Session loaded successfully with ${session.messages.length} messages', tag: 'ChatBloc');
+      emit(ChatLoaded(
+        session: session,
+        messages: session.messages,
+      ));
+      return;
+    }
+
+    // Handle failure
+    final failure = result.fold((f) => f, (_) => throw StateError('unreachable'));
+    _logger.warning('Session not found: ${event.sessionId}', tag: 'ChatBloc');
+
+    if (!failure.toString().contains('Session not found')) {
+      _logger.error('Failed to load session: ${failure.toString()}', tag: 'ChatBloc');
+      emit(ChatError(message: failure.toString()));
+      return;
+    }
+
+    // Session not found — create a new one
+    final providersResult = await getProviders();
+
+    if (providersResult.isLeft()) {
+      _logger.error('No provider configured', tag: 'ChatBloc');
+      emit(ChatError(message: 'No provider configured. Please add a provider in settings.'));
+      return;
+    }
+
+    final providers = providersResult.getOrElse((_) => []);
+    if (providers.isEmpty) {
+      _logger.error('No providers available', tag: 'ChatBloc');
+      emit(ChatError(message: 'No provider configured. Please add a provider in settings.'));
+      return;
+    }
+
+    final defaultProvider = providers.firstWhere(
+      (p) => p.isDefault,
+      orElse: () => providers.first,
     );
+
+    _logger.info('Creating new session with provider: ${defaultProvider.name}', tag: 'ChatBloc');
+    final newSession = Session(
+      id: event.sessionId,
+      name: 'New Chat',
+      sshConfigId: 'default',
+      providerId: defaultProvider.id,
+      workingDirectory: '/home',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      messages: [],
+    );
+
+    emit(ChatLoaded(
+      session: newSession,
+      messages: [],
+    ));
   }
 
   List<Tool> _getAvailableTools() {

@@ -28,9 +28,26 @@ class BashTool extends BaseTool {
   @override
   bool get isReadOnly => false;
 
+  /// Dangerous command patterns that should be blocked for safety.
+  static final _dangerousPatterns = [
+    RegExp(r'rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/\s*$'),
+    RegExp(r'rm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\s+/\s*$'),
+    RegExp(r'mkfs\.'),
+    RegExp(r'dd\s+.*of=/dev/'),
+    RegExp(r':(\s*)\{\s*:\|:\s*&\s*\}\s*;\s*:'),
+  ];
+
   @override
   Future<String> execute(Map<String, dynamic> arguments) async {
     final command = arguments['command'] as String;
+
+    // Check for dangerous commands
+    for (final pattern in _dangerousPatterns) {
+      if (pattern.hasMatch(command)) {
+        return 'Error: This command has been blocked for safety. '
+            'It matches a dangerous pattern that could cause data loss.';
+      }
+    }
 
     final result = await sshRepository.executeCommand(command);
 
